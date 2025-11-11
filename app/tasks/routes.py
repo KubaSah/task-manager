@@ -24,12 +24,23 @@ def list_tasks():
 @login_required
 def create_task():
     form = TaskForm()
+    # Build project choices from memberships
+    memberships = Membership.query.filter_by(user_id=current_user.id).all()
+    user_projects = Project.query.filter(Project.id.in_([m.project_id for m in memberships])).all() if memberships else []
+    form.project_id.choices = [(p.id, f"{p.key} — {p.name}") for p in user_projects]
+
+    # Determine selected project: query param has priority, else form field
+    preselected_pid = request.args.get('project', type=int)
+    if preselected_pid and not any(p.id == preselected_pid for p in user_projects):
+        flash('Nie masz dostępu do wybranego projektu', 'danger')
+        return redirect(url_for('tasks.list_tasks'))
+
     if form.validate_on_submit():
-        project_id = request.args.get('project')
-        project = Project.query.get(project_id) if project_id else None
+        target_pid = preselected_pid or form.project_id.data
+        project = Project.query.get(target_pid) if target_pid else None
         if not project:
-            flash('Brak poprawnego projektu', 'danger')
-            return redirect(url_for('tasks.list_tasks'))
+            flash('Wybierz projekt', 'danger')
+            return redirect(url_for('tasks.create_task'))
         # Require membership for the target project
         require_project_membership(project.id)
         desc = clean(form.description.data or '', tags=['b','i','em','strong','code'], strip=True)
@@ -44,7 +55,7 @@ def create_task():
         db.session.commit()
         flash('Zadanie utworzone', 'success')
         return redirect(url_for('tasks.task_detail', task_id=t.id))
-    return render_template('tasks/create.html', form=form)
+    return render_template('tasks/create.html', form=form, preselected_pid=preselected_pid)
 
 
 @bp.get('/<int:task_id>')

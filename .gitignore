@@ -144,6 +144,12 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
 # Spyder project settings
 .spyderproject
 .spyproject

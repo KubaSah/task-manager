@@ -1,6 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}Logowanie{% endblock %}
+{% block section_title %}Logowanie{% endblock %}
 {% block content %}
-<h2>Logowanie</h2>
-<p>SSO Google / GitHub wkrótce dostępne.</p>
+<div class="grid" style="gap:14px;">
+    <div class="card">
+        <h2>Wejdź przez email i hasło</h2>
+        <form method="post">
+            {{ form.csrf_token if form else '' }}
+            <div class="field">
+                <label>{{ form.email.label if form else 'Email' }}</label>
+                {{ form.email(size=40) if form else '' }}
+            </div>
+            <div class="field">
+                <label>{{ form.password.label if form else 'Hasło' }}</label>
+                {{ form.password(size=40) if form else '' }}
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="btn btn-primary" type="submit">Zaloguj</button>
+                <a class="btn" href="{{ url_for('auth.register') }}">Utwórz konto</a>
+            </div>
+            {% if form %}
+            {% for field, errors in form.errors.items() %}
+            {% for error in errors %}
+            <div class="alert alert-danger" style="margin-top:10px">{{ field }}: {{ error }}</div>
+            {% endfor %}
+            {% endfor %}
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Single Sign-On</h2>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn" href="{{ url_for('auth.oauth_login', provider='google') }}">Zaloguj przez Google</a>
+            <a class="btn" href="{{ url_for('auth.oauth_login', provider='github') }}">Zaloguj przez GitHub</a>
+        </div>
+        <p class="muted" style="margin-top:8px">SSO wymaga skonfigurowania kluczy OAuth w zmiennych środowiskowych.</p>
+    </div>
+</div>
 {% endblock %}

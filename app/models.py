@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import CheckConstraint, UniqueConstraint, Index
 from sqlalchemy.orm import validates
 
@@ -38,12 +39,15 @@ class User(UserMixin, db.Model):
     avatar_url: Optional[str] = db.Column(db.String(512))
     provider = db.Column(db.String(50), nullable=False)  # 'google' | 'github'
     provider_id = db.Column(db.String(255), nullable=False)
+    # Local auth (optional): store hashed password when provider=='local'
+    password_hash = db.Column(db.String(255))
 
     created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
     updated_at = db.Column(db.DateTime, default=now_utc, onupdate=now_utc, nullable=False)
 
     roles = db.relationship('Role', secondary=user_roles, backref='users', lazy='dynamic')
     memberships = db.relationship('Membership', back_populates='user', cascade='all, delete-orphan')
+    identities = db.relationship('UserIdentity', back_populates='user', cascade='all, delete-orphan')
 
     __table_args__ = (
         UniqueConstraint('provider', 'provider_id', name='uq_provider_identity'),
@@ -51,6 +55,32 @@ class User(UserMixin, db.Model):
 
     def get_id(self):  # Flask-Login requires string id
         return str(self.id)
+
+    # Password helpers (only for local provider users)
+    def set_password(self, password: str):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
+
+
+class UserIdentity(db.Model):
+    __tablename__ = 'user_identities'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    provider = db.Column(db.String(50), nullable=False)
+    provider_id = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
+
+    user = db.relationship('User', back_populates='identities')
+
+    __table_args__ = (
+        UniqueConstraint('provider', 'provider_id', name='uq_identity_provider_id'),
+        Index('ix_identity_user_provider', 'user_id', 'provider'),
+    )
 
 
 class Project(db.Model):

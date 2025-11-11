@@ -1,13 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}Zadania{% endblock %}
+{% block section_title %}Zadania{% endblock %}
 {% block content %}
-<h1>Zadania</h1>
-<p><a href="{{ url_for('tasks.create_task') }}">Nowe zadanie</a></p>
-<ul>
+<div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 14px;">
+    <h1>Zadania</h1>
+    <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}">+ Nowe zadanie</a>
+</div>
+<div class="board">
+    {% set grouped = {'todo': [], 'in_progress': [], 'done': []} %}
     {% for t in tasks %}
-    <li><a href="{{ url_for('tasks.task_detail', task_id=t.id) }}">#{{ t.id }} {{ t.title }} — {{ t.status }}</a></li>
-    {% else %}
-    <li>Brak zadań</li>
+    {% set _ = grouped[t.status].append(t) %}
     {% endfor %}
-</ul>
+    {% for col, label in [('todo','Do zrobienia'), ('in_progress','W toku'), ('done','Zrobione')] %}
+    <div class="column" data-status="{{ col }}">
+        <div class="column-header">{{ label }} <span class="chip {{ col }}">{{ grouped[col]|length }}</span></div>
+        {% for t in grouped[col] %}
+        <div class="card task-card">
+            <div class="task-title"><a style="color:inherit; text-decoration:none;"
+                    href="{{ url_for('tasks.task_detail', task_id=t.id) }}">#{{ t.id }} {{ t.title }}</a></div>
+            <div class="meta">Priorytet: {{ t.priority }}</div>
+            {% if t.description %}<div class="muted" style="font-size:12px">{{ t.description[:140] }}{% if
+                t.description|length > 140 %}…{% endif %}</div>{% endif %}
+        </div>
+        {% else %}
+        <div class="card" style="opacity:.5"><em>Brak</em></div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
 {% endblock %}

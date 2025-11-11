@@ -2,11 +2,12 @@ import os
 import secrets
 from urllib.parse import urljoin
 
-from flask import Blueprint, render_template, current_app, redirect, request, session, url_for, abort
+from flask import Blueprint, render_template, current_app, redirect, request, session, url_for, abort, flash
 from flask_login import login_user, logout_user, current_user
 from authlib.integrations.flask_client import OAuth
 from .. import db, limiter
-from ..models import User, Role
+from ..models import User, Role, UserIdentity
+from ..forms import LoginForm, RegistrationForm
 from .decorators import role_required
 
 oauth = OAuth()
@@ -22,15 +23,13 @@ def init_oauth_clients():
     cfg = current_app.config
     # Google
     if cfg.get('OAUTH_GOOGLE_CLIENT_ID') and cfg.get('OAUTH_GOOGLE_CLIENT_SECRET'):
+        # Use OIDC discovery so Authlib knows jwks_uri and userinfo endpoint
         oauth.register(
             name='google',
             client_id=cfg['OAUTH_GOOGLE_CLIENT_ID'],
             client_secret=cfg['OAUTH_GOOGLE_CLIENT_SECRET'],
-            access_token_url='https://oauth2.googleapis.com/token',
-            access_token_params=None,
-            authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
+            server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
             authorize_params={'prompt': 'consent'},
-            api_base_url='https://www.googleapis.com/oauth2/v3/',
             client_kwargs={'scope': ' '.join(cfg['OAUTH_GOOGLE_SCOPE'])}
         )
     # GitHub
@@ -47,11 +46,39 @@ def init_oauth_clients():
     current_app.config['oauth_inited'] = True
 
 
-@bp.get('/login')
+@bp.route('/login', methods=['GET'])
+@limiter.limit("10 per minute")
 def login():
+    # SSO-only: redirect bezpośrednio do Google OAuth
     if current_user.is_authenticated:
         return redirect(url_for('core.index'))
-    return render_template('auth/login.html')
+    return redirect(url_for('auth.oauth_login', provider='google'))
+
+@bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('core.index'))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        email = form.email.data.lower().strip()
+        existing = User.query.filter_by(email=email).first()
+        if existing:
+            flash('Użytkownik z takim emailem już istnieje', 'danger')
+        else:
+            user = User(email=email, name=form.name.data.strip(), provider='local', provider_id=email)
+            user.set_password(form.password.data)
+            # Ensure default role exists
+            role = Role.query.filter_by(name='user').first()
+            if not role:
+                role = Role(name='user', description='Standard user')
+                db.session.add(role)
+            user.roles.append(role)
+            db.session.add(user)
+            db.session.commit()
+            flash('Konto utworzone. Możesz się zalogować.', 'success')
+            return redirect(url_for('auth.login'))
+    return render_template('auth/register.html', form=form)
 
 
 def _build_redirect_uri(provider: str) -> str:
@@ -88,7 +115,8 @@ def oauth_callback(provider: str):
         abort(403)
     token = client.authorize_access_token()
     if provider == 'google':
-        userinfo = client.get('userinfo').json()
+        # With OIDC discovery, Authlib knows the userinfo endpoint
+        userinfo = client.userinfo()
         email = userinfo.get('email')
         name = userinfo.get('name') or email
         avatar = userinfo.get('picture')
@@ -104,16 +132,26 @@ def oauth_callback(provider: str):
 
     if not email:
         abort(403)
-    user = User.query.filter_by(provider=provider, provider_id=provider_id).first()
-    if not user:
-        user = User(email=email, name=name, avatar_url=avatar, provider=provider, provider_id=provider_id)
-        # Assign default role 'user'; ensure role exists
-        role = Role.query.filter_by(name='user').first()
-        if not role:
-            role = Role(name='user', description='Standard user')
-            db.session.add(role)
-        user.roles.append(role)
-        db.session.add(user)
+    # First, try to find linked identity
+    identity = UserIdentity.query.filter_by(provider=provider, provider_id=provider_id).first()
+    if identity:
+        user = identity.user
+    else:
+        # Fallback by email: link this provider to existing account if email matches
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            user = User(email=email, name=name, avatar_url=avatar, provider=provider, provider_id=provider_id)
+            # Assign default role 'user'; ensure role exists
+            role = Role.query.filter_by(name='user').first()
+            if not role:
+                role = Role(name='user', description='Standard user')
+                db.session.add(role)
+            user.roles.append(role)
+            db.session.add(user)
+            db.session.flush()
+        # Create identity link for this provider
+        ident = UserIdentity(user=user, provider=provider, provider_id=provider_id)
+        db.session.add(ident)
         db.session.commit()
     login_user(user)
     current_app.logger.info(f"auth_login_success user_id={user.id} provider={provider}")

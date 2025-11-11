@@ -1,6 +1,22 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
+{% block section_title %}Dashboard{% endblock %}
 {% block content %}
-<h1>Secure Taskboard</h1>
-<p>Witamy w aplikacji – fundamenty bezpieczeństwa są w trakcie budowy.</p>
+<div class="grid cols-3">
+    <div class="card">
+        <h2>Projekty</h2>
+        <p class="muted">Zarządzaj obszarami pracy i członkami zespołu.</p>
+        <a class="btn btn-primary" href="{{ url_for('projects.list_projects') }}">Przegląd</a>
+    </div>
+    <div class="card">
+        <h2>Zadania</h2>
+        <p class="muted">Monitoruj postęp, priorytety i statusy.</p>
+        <a class="btn btn-primary" href="{{ url_for('tasks.list_tasks') }}">Tablica</a>
+    </div>
+    <div class="card">
+        <h2>Bezpieczeństwo</h2>
+        <p class="muted">Włączone nagłówki: CSP, HSTS (prod), X-Frame-Options.</p>
+        <a class="btn" href="{{ url_for('auth.login') }}">Dostęp</a>
+    </div>
+</div>
 {% endblock %}

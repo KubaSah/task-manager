@@ -1,35 +1,54 @@
 {% extends 'base.html' %}
 {% block title %}Zadanie #{{ task.id }}{% endblock %}
+{% block section_title %}Zadanie #{{ task.id }}{% endblock %}
 {% block content %}
-<h1>#{{ task.id }} — {{ task.title }}</h1>
-<p>Status: {{ task.status }} | Priorytet: {{ task.priority }}</p>
-{% if task.description %}
-<div><strong>Opis:</strong><br>{{ task.description|safe }}</div>
-{% endif %}
+<div class="grid" style="gap:14px; margin-right:24px;">
+    <div class="card">
+        <h1 style="margin-bottom:6px">{{ task.title }}</h1>
+        <div class="meta" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span class="chip {{ task.status }}">Status: {{ 'Do zrobienia' if task.status=='todo' else ('W toku' if
+                task.status=='in_progress' else 'Zrobione') }}</span>
+            <span class="chip">Priorytet: {{ task.priority }}</span>
+        </div>
+        {% if task.description %}
+        <div style="margin-top:12px">{{ task.description|safe }}</div>
+        {% endif %}
 
-<h3>Komentarze</h3>
-<ul>
-    {% for c in task.comments %}
-    <li>{{ c.author.name if c.author else 'anon' }}: {{ c.content|safe }}</li>
-    {% else %}
-    <li>Brak komentarzy</li>
-    {% endfor %}
-</ul>
-<form method="post" action="{{ url_for('tasks.add_comment', task_id=task.id) }}">
-    {{ comment_form.csrf_token }}
-    {{ comment_form.content(rows=3, cols=60) }}
-    <button type="submit">Dodaj komentarz</button>
-</form>
+        <div style="display:flex; gap:10px; align-items:center; margin-top:12px;">
+            <form method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}"
+                style="display:flex; gap:8px; align-items:center;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <label for="status" class="meta">Zmień status</label>
+                <select id="status" name="status">
+                    <option value="todo" {% if task.status=='todo' %}selected{% endif %}>Do zrobienia</option>
+                    <option value="in_progress" {% if task.status=='in_progress' %}selected{% endif %}>W toku</option>
+                    <option value="done" {% if task.status=='done' %}selected{% endif %}>Zrobione</option>
+                </select>
+                <button class="btn" type="submit">Zastosuj</button>
+            </form>
+            <a class="btn" href="{{ url_for('tasks.list_tasks') }}">Powrót</a>
+        </div>
+    </div>
 
-<h3>Zmień status</h3>
-<form method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
-    {{ csrf_token() }}
-    <select name="status">
-        <option value="todo" {% if task.status=='todo' %}selected{% endif %}>Do zrobienia</option>
-        <option value="in_progress" {% if task.status=='in_progress' %}selected{% endif %}>W toku</option>
-        <option value="done" {% if task.status=='done' %}selected{% endif %}>Zrobione</option>
-    </select>
-    <button type="submit">Zmień</button>
-</form>
-<p><a href="{{ url_for('tasks.list_tasks') }}">Powrót</a></p>
+    <div class="card">
+        <h2>Komentarze</h2>
+        <div class="grid" style="gap:8px;">
+            {% for c in task.comments %}
+            <div class="card" style="padding:10px; background: transparent; border-color: rgba(255,255,255,0.06);">
+                <div class="meta" style="margin-bottom:4px">{{ c.author.name if c.author else 'anon' }}</div>
+                <div>{{ c.content|safe }}</div>
+            </div>
+            {% else %}
+            <div class="muted">Brak komentarzy</div>
+            {% endfor %}
+        </div>
+        <form method="post" action="{{ url_for('tasks.add_comment', task_id=task.id) }}" style="margin-top:10px;">
+            {{ comment_form.csrf_token }}
+            <div class="field">
+                {{ comment_form.content(rows=3, cols=60) }}
+            </div>
+            <button class="btn btn-primary" type="submit">Dodaj komentarz</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

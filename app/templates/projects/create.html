@@ -1,27 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}Nowy projekt{% endblock %}
+{% block section_title %}Nowy projekt{% endblock %}
 {% block content %}
-<h1>Nowy projekt</h1>
-<form method="post">
-    {{ form.csrf_token }}
-    <div>
-        {{ form.name.label }}<br>
-        {{ form.name(size=40) }}
-    </div>
-    <div>
-        {{ form.key.label }}<br>
-        {{ form.key(size=20) }}
-    </div>
-    <div>
-        {{ form.description.label }}<br>
-        {{ form.description(rows=5, cols=60) }}
-    </div>
-    <button type="submit">Utwórz</button>
-    <a href="{{ url_for('projects.list_projects') }}">Anuluj</a>
-    {% for field, errors in form.errors.items() %}
-    {% for error in errors %}
-    <div style="color:#b00">{{ field }}: {{ error }}</div>
-    {% endfor %}
-    {% endfor %}
-</form>
+<div class="card">
+    <form method="post">
+        {{ form.csrf_token }}
+        <div class="field">
+            <label>{{ form.name.label }}</label>
+            {{ form.name(size=40) }}
+        </div>
+        <div class="field">
+            <label>{{ form.key.label }}</label>
+            {{ form.key(size=20) }}
+        </div>
+        <div class="field">
+            <label>{{ form.description.label }}</label>
+            {{ form.description(rows=5, cols=60) }}
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" type="submit">Utwórz</button>
+            <a class="btn" href="{{ url_for('projects.list_projects') }}">Anuluj</a>
+        </div>
+        {% for field, errors in form.errors.items() %}
+        {% for error in errors %}
+        <div class="alert alert-danger" style="margin-top:10px">{{ field }}: {{ error }}</div>
+        {% endfor %}
+        {% endfor %}
+    </form>
+</div>
 {% endblock %}

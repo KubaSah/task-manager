@@ -5,34 +5,67 @@
     <meta charset="utf-8">
     <title>{% block title %}Secure Taskboard{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    {% block head %}{% endblock %}
 </head>
 
 <body>
-    <nav>
-        <a href="/">Strona główna</a> |
-        <a href="/projects/">Projekty</a> |
-        <a href="/tasks/">Zadania</a> |
-        <a href="/auth/login">Logowanie</a>
-    </nav>
-    {% if current_user.is_authenticated %}
-    <span>Zalogowany: {{ current_user.name }}</span> |
-    <a href="{{ url_for('auth.logout') }}">Wyloguj</a>
-    {% else %}
-    <a href="{{ url_for('auth.login') }}">Logowanie</a> |
-    <a href="{{ url_for('auth.oauth_login', provider='google') }}">SSO Google</a> |
-    <a href="{{ url_for('auth.oauth_login', provider='github') }}">SSO GitHub</a>
-    {% endif %}
-    <hr>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <ul>
-        {% for category, message in messages %}
-        <li><strong>{{ category|capitalize }}:</strong> {{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo" aria-hidden="true"></div>
+                <div class="brand-name">Secure Taskboard</div>
+            </div>
+            <nav class="nav">
+                <a href="{{ url_for('core.index') }}"
+                    class="{% if request.endpoint=='core.index' %}active{% endif %}">🏠 Dashboard</a>
+                <a href="{{ url_for('projects.list_projects') }}"
+                    class="{% if request.blueprint=='projects' %}active{% endif %}">📁 Projekty</a>
+                <a href="{{ url_for('tasks.list_tasks') }}"
+                    class="{% if request.blueprint=='tasks' %}active{% endif %}">📌 Zadania</a>
+                <a href="{{ url_for('api.health') }}" class="btn-ghost">🔌 API <small>REST</small></a>
+            </nav>
+        </aside>
+        <section>
+            <header class="topbar">
+                <div style="display:flex; align-items:center; gap:10px">
+                    <strong>{% block section_title %}{% endblock %}</strong>
+                </div>
+                <div class="search">
+                    <form action="#" method="get" onsubmit="return false">
+                        <input type="text" placeholder="Szukaj… (wkrótce)" aria-label="Szukaj">
+                    </form>
+                </div>
+                <div class="user">
+                    {% if current_user.is_authenticated %}
+                    <span>{{ current_user.name }}</span>
+                    <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Wyloguj</a>
+                    {% else %}
+                    <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Zaloguj</a>
+                    <a class="btn btn-ghost" href="{{ url_for('auth.oauth_login', provider='google') }}">Google</a>
+                    <a class="btn btn-ghost" href="{{ url_for('auth.oauth_login', provider='github') }}">GitHub</a>
+                    {% endif %}
+                </div>
+            </header>
+            <main class="content">
+                <div class="container">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="alerts">
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category in ['success','danger','info'] else 'info' }}">
+                            {{ message }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </section>
+    </div>
+    {% block scripts %}{% endblock %}
 </body>
 
 </html>

@@ -1,0 +1,12 @@
+{
+    "name": "task-manager-ui",
+    "private": true,
+    "version": "0.1.0",
+    "scripts": {
+        "dev": "tailwindcss -i app/static/css/tw.css -o app/static/css/app.css --watch",
+        "build": "tailwindcss -i app/static/css/tw.css -o app/static/css/app.css --minify"
+    },
+    "devDependencies": {
+        "tailwindcss": "^3.4.14"
+    }
+}
