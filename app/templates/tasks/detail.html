@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Zadanie #{{ task.id }}{% endblock %}
+{% block content %}
+<h1>#{{ task.id }} — {{ task.title }}</h1>
+<p>Status: {{ task.status }} | Priorytet: {{ task.priority }}</p>
+{% if task.description %}
+<div><strong>Opis:</strong><br>{{ task.description|safe }}</div>
+{% endif %}
+
+<h3>Komentarze</h3>
+<ul>
+    {% for c in task.comments %}
+    <li>{{ c.author.name if c.author else 'anon' }}: {{ c.content|safe }}</li>
+    {% else %}
+    <li>Brak komentarzy</li>
+    {% endfor %}
+</ul>
+<form method="post" action="{{ url_for('tasks.add_comment', task_id=task.id) }}">
+    {{ comment_form.csrf_token }}
+    {{ comment_form.content(rows=3, cols=60) }}
+    <button type="submit">Dodaj komentarz</button>
+</form>
+
+<h3>Zmień status</h3>
+<form method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
+    {{ csrf_token() }}
+    <select name="status">
+        <option value="todo" {% if task.status=='todo' %}selected{% endif %}>Do zrobienia</option>
+        <option value="in_progress" {% if task.status=='in_progress' %}selected{% endif %}>W toku</option>
+        <option value="done" {% if task.status=='done' %}selected{% endif %}>Zrobione</option>
+    </select>
+    <button type="submit">Zmień</button>
+</form>
+<p><a href="{{ url_for('tasks.list_tasks') }}">Powrót</a></p>
+{% endblock %}

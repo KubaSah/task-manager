@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Projekt: {{ project.key }}{% endblock %}
+{% block content %}
+<h1>{{ project.key }} — {{ project.name }}</h1>
+{% if project.description %}
+<p>{{ project.description }}</p>
+{% endif %}
+<p>
+    <a href="{{ url_for('tasks.create_task') }}?project={{ project.id }}">Dodaj zadanie do tego projektu</a>
+</p>
+<form method="post" action="{{ url_for('projects.delete_project', project_id=project.id) }}">
+    {{ csrf_token() }}
+    {% if role in ['owner','admin'] %}
+    <button type="submit">Usuń projekt</button>
+    {% else %}
+    <button type="submit" disabled title="Tylko owner/admin">Usuń projekt</button>
+    {% endif %}
+    <a href="{{ url_for('projects.list_projects') }}">Powrót</a>
+</form>
+{% endblock %}

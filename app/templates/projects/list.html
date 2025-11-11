@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Projekty{% endblock %}
+{% block content %}
+<h1>Projekty</h1>
+<p><a href="{{ url_for('projects.create_project') }}">Nowy projekt</a></p>
+<ul>
+    {% for p in projects %}
+    <li>
+        <a href="{{ url_for('projects.project_detail', project_id=p.id) }}">{{ p.key }} — {{ p.name }}</a>
+        <small>(Twoja rola: {{ roles_by_project.get(p.id, 'member') }})</small>
+    </li>
+    {% else %}
+    <li>Brak projektów</li>
+    {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pl">
+
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Secure Taskboard{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+    <nav>
+        <a href="/">Strona główna</a> |
+        <a href="/projects/">Projekty</a> |
+        <a href="/tasks/">Zadania</a> |
+        <a href="/auth/login">Logowanie</a>
+    </nav>
+    {% if current_user.is_authenticated %}
+    <span>Zalogowany: {{ current_user.name }}</span> |
+    <a href="{{ url_for('auth.logout') }}">Wyloguj</a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}">Logowanie</a> |
+    <a href="{{ url_for('auth.oauth_login', provider='google') }}">SSO Google</a> |
+    <a href="{{ url_for('auth.oauth_login', provider='github') }}">SSO GitHub</a>
+    {% endif %}
+    <hr>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul>
+        {% for category, message in messages %}
+        <li><strong>{{ category|capitalize }}:</strong> {{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</body>
+
+</html>

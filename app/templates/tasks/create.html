@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Nowe zadanie{% endblock %}
+{% block content %}
+<h1>Nowe zadanie</h1>
+<form method="post">
+    {{ form.csrf_token }}
+    <div>
+        {{ form.title.label }}<br>
+        {{ form.title(size=60) }}
+    </div>
+    <div>
+        {{ form.description.label }}<br>
+        {{ form.description(rows=6, cols=60) }}
+    </div>
+    <div>
+        {{ form.status.label }}
+        {{ form.status() }}
+        {{ form.priority.label }}
+        {{ form.priority() }}
+    </div>
+    <button type="submit">Utwórz</button>
+    <a href="{{ url_for('tasks.list_tasks') }}">Anuluj</a>
+    {% for field, errors in form.errors.items() %}
+    {% for error in errors %}
+    <div style="color:#b00">{{ field }}: {{ error }}</div>
+    {% endfor %}
+    {% endfor %}
+</form>
+{% endblock %}
