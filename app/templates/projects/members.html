@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Członkowie projektu {{ project.key }}{% endblock %}
+{% block section_title %}Członkowie: {{ project.key }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+    <h1>{{ project.name }}</h1>
+    <div style="display:flex; gap:10px;">
+        <a class="btn" href="{{ url_for('projects.project_detail', project_id=project.id) }}">Powrót</a>
+    </div>
+</div>
+<div class="card" style="margin-bottom:20px;">
+    <h2 style="margin-top:0;">Lista członków</h2>
+    <div class="grid" style="gap:10px;">
+        {% for m in memberships %}
+        <div class="card" style="padding:10px; background:transparent; border-color:rgba(255,255,255,0.07);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="display:grid; gap:4px;">
+                    <strong>{{ m.user.name }}</strong>
+                    <span class="meta">{{ m.user.email }}</span>
+                    <span class="chip">Rola: {{ m.role }}</span>
+                </div>
+                {% if can_manage and m.role != 'owner' %}
+                <form method="post"
+                    action="{{ url_for('projects.change_member_role', project_id=project.id, membership_id=m.id) }}"
+                    style="display:flex; gap:8px; align-items:center;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <select name="role">
+                        <option value="admin" {% if m.role=='admin' %}selected{% endif %}>admin</option>
+                        <option value="member" {% if m.role=='member' %}selected{% endif %}>member</option>
+                        <option value="viewer" {% if m.role=='viewer' %}selected{% endif %}>viewer</option>
+                    </select>
+                    <button class="btn" type="submit">Zmień</button>
+                </form>
+                <form method="post"
+                    action="{{ url_for('projects.remove_member', project_id=project.id, membership_id=m.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button class="btn btn-danger" type="submit">Usuń</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="muted">Brak członków projektu.</div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if can_manage %}
+<div class="card">
+    <h2 style="margin-top:0;">Dodaj członka</h2>
+    <form method="post" action="{{ url_for('projects.add_member', project_id=project.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="field">
+            <label>Email użytkownika</label>
+            <input type="text" name="email" placeholder="np. user@example.com" />
+        </div>
+        <div class="field">
+            <label>Rola</label>
+            <select name="role">
+                <option value="member">member</option>
+                <option value="admin">admin</option>
+                <option value="viewer">viewer</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Dodaj</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

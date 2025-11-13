@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from bleach import clean
 
 from .. import db
-from ..models import Task, Project, Comment, Membership
+from ..models import Task, Project, Comment, Membership, User
 from ..security.permissions import require_project_membership
 from ..forms import TaskForm, CommentForm
 
@@ -63,8 +63,12 @@ def create_task():
 def task_detail(task_id: int):
     t = Task.query.get_or_404(task_id)
     require_project_membership(t.project_id)
+    # Build assignee choices (members of project)
+    memberships = Membership.query.filter_by(project_id=t.project_id).all()
+    member_users = User.query.filter(User.id.in_([m.user_id for m in memberships])).all() if memberships else []
+    assignee_choices = [(u.id, u.name) for u in member_users]
     comment_form = CommentForm()
-    return render_template('tasks/detail.html', task=t, comment_form=comment_form)
+    return render_template('tasks/detail.html', task=t, comment_form=comment_form, assignee_choices=assignee_choices)
 
 
 @bp.post('/<int:task_id>/comment')
@@ -96,4 +100,57 @@ def update_status(task_id: int):
         t.status = new_status
         db.session.commit()
         flash('Zmieniono status', 'info')
+    return redirect(url_for('tasks.task_detail', task_id=task_id))
+
+
+@bp.post('/<int:task_id>/assignee')
+@login_required
+def update_assignee(task_id: int):
+    t = Task.query.get_or_404(task_id)
+    require_project_membership(t.project_id)
+    new_assignee_id = request.form.get('assignee', type=int)
+    if new_assignee_id is None:
+        flash('Brak wskazanego użytkownika', 'danger')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
+    # Only allow assignee among project members
+    membership = Membership.query.filter_by(project_id=t.project_id, user_id=new_assignee_id).first()
+    if not membership:
+        flash('Użytkownik nie jest członkiem projektu', 'danger')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
+    t.assignee_id = new_assignee_id
+    db.session.commit()
+    flash('Zmieniono przypisanie zadania', 'success')
+    return redirect(url_for('tasks.task_detail', task_id=task_id))
+
+
+@bp.post('/<int:task_id>/delete')
+@login_required
+def delete_task(task_id: int):
+    t = Task.query.get_or_404(task_id)
+    role = require_project_membership(t.project_id)
+    if role not in ('owner','admin') and t.created_by_id != current_user.id:
+        flash('Brak uprawnień do usunięcia zadania', 'danger')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
+    db.session.delete(t)
+    db.session.commit()
+    flash('Usunięto zadanie', 'info')
+    return redirect(url_for('tasks.list_tasks'))
+
+
+@bp.post('/<int:task_id>/comment/<int:comment_id>/delete')
+@login_required
+def delete_comment(task_id: int, comment_id: int):
+    t = Task.query.get_or_404(task_id)
+    require_project_membership(t.project_id)
+    c = Comment.query.get_or_404(comment_id)
+    if c.task_id != t.id:
+        flash('Komentarz nie należy do zadania', 'danger')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
+    role = require_project_membership(t.project_id)
+    if c.author_id != current_user.id and role not in ('owner','admin'):
+        flash('Brak uprawnień do usunięcia komentarza', 'danger')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
+    db.session.delete(c)
+    db.session.commit()
+    flash('Usunięto komentarz', 'info')
     return redirect(url_for('tasks.task_detail', task_id=task_id))

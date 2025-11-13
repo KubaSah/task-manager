@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from bleach import clean
 
 from .. import db
-from ..models import Project, Membership
+from ..models import Project, Membership, User
 from ..security.permissions import require_project_membership
 from ..forms import ProjectForm
  
@@ -59,3 +59,77 @@ def delete_project(project_id: int):
     db.session.commit()
     flash('Projekt usunięty', 'info')
     return redirect(url_for('projects.list_projects'))
+
+
+@bp.get('/<int:project_id>/members')
+@login_required
+def project_members(project_id: int):
+    p = Project.query.get_or_404(project_id)
+    role = require_project_membership(project_id)
+    memberships = Membership.query.filter_by(project_id=project_id).all()
+    can_manage = role in ('owner', 'admin')
+    return render_template('projects/members.html', project=p, memberships=memberships, can_manage=can_manage, role=role)
+
+
+@bp.post('/<int:project_id>/members/add')
+@login_required
+def add_member(project_id: int):
+    _ = require_project_membership(project_id, roles=('owner', 'admin'))
+    email = (request.form.get('email') or '').strip().lower()
+    role = (request.form.get('role') or 'member').strip()
+    if role not in ('admin', 'member', 'viewer'):
+        role = 'member'
+    if not email:
+        flash('Podaj email użytkownika', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash('Użytkownik o podanym email nie istnieje', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    existing = Membership.query.filter_by(user_id=user.id, project_id=project_id).first()
+    if existing:
+        flash('Użytkownik jest już członkiem projektu', 'info')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    m = Membership(user_id=user.id, project_id=project_id, role=role)
+    db.session.add(m)
+    db.session.commit()
+    flash('Dodano członka projektu', 'success')
+    return redirect(url_for('projects.project_members', project_id=project_id))
+
+
+@bp.post('/<int:project_id>/members/<int:membership_id>/role')
+@login_required
+def change_member_role(project_id: int, membership_id: int):
+    _ = require_project_membership(project_id, roles=('owner', 'admin'))
+    m = Membership.query.get_or_404(membership_id)
+    if m.project_id != project_id:
+        flash('Nieprawidłowy projekt', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    new_role = (request.form.get('role') or '').strip()
+    if m.role == 'owner':
+        flash('Nie można zmienić roli właściciela (transfer własności wkrótce)', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    if new_role not in ('admin', 'member', 'viewer'):
+        flash('Nieprawidłowa rola', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    m.role = new_role
+    db.session.commit()
+    flash('Zmieniono rolę', 'success')
+    return redirect(url_for('projects.project_members', project_id=project_id))
+
+
+@bp.post('/<int:project_id>/members/<int:membership_id>/remove')
+@login_required
+def remove_member(project_id: int, membership_id: int):
+    _ = require_project_membership(project_id, roles=('owner', 'admin'))
+    m = Membership.query.get_or_404(membership_id)
+    if m.project_id != project_id:
+        flash('Nieprawidłowy projekt', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    if m.role == 'owner':
+        flash('Nie można usunąć właściciela projektu', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    db.session.delete(m)
+    db.session.commit()
+    flash('Usunięto członka projektu', 'info')
+    return redirect(url_for('projects.project_members', project_id=project_id))

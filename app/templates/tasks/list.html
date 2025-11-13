@@ -15,7 +15,7 @@
     <div class="column" data-status="{{ col }}">
         <div class="column-header">{{ label }} <span class="chip {{ col }}">{{ grouped[col]|length }}</span></div>
         {% for t in grouped[col] %}
-        <div class="card task-card">
+        <div class="card task-card" draggable="true" data-task-id="{{ t.id }}">
             <div class="task-title"><a style="color:inherit; text-decoration:none;"
                     href="{{ url_for('tasks.task_detail', task_id=t.id) }}">#{{ t.id }} {{ t.title }}</a></div>
             <div class="meta">Priorytet: {{ t.priority }}</div>
@@ -28,4 +28,74 @@
     </div>
     {% endfor %}
 </div>
+{% block scripts %}
+<script>
+    (function () {
+        const getToken = () => document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const board = document.querySelector('.board');
+        if (!board) return;
+
+        // Drag events
+        let draggedCard = null;
+        board.addEventListener('dragstart', (e) => {
+            const card = e.target.closest('.task-card');
+            if (!card) return;
+            draggedCard = card;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', card.dataset.taskId);
+            card.style.opacity = '0.6';
+        });
+        board.addEventListener('dragend', (e) => {
+            const card = e.target.closest('.task-card');
+            if (card) card.style.opacity = '';
+            draggedCard = null;
+        });
+
+        board.querySelectorAll('.column').forEach(col => {
+            col.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            col.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                const taskId = e.dataTransfer.getData('text/plain');
+                const newStatus = col.dataset.status;
+                if (!taskId || !newStatus || !draggedCard) return;
+                try {
+                    const body = new URLSearchParams();
+                    body.set('status', newStatus);
+                    const resp = await fetch(`/tasks/${taskId}/status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                            'X-CSRFToken': getToken()
+                        },
+                        body
+                    });
+                    if (resp.ok) {
+                        // Move card in UI optimistycznie
+                        col.appendChild(draggedCard);
+                        // Update counters
+                        updateCounters();
+                    } else {
+                        alert('Nie udało się zmienić statusu (HTTP ' + resp.status + ')');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Błąd podczas zapisu statusu');
+                }
+            });
+        });
+
+        function updateCounters() {
+            document.querySelectorAll('.column').forEach(col => {
+                const status = col.dataset.status;
+                const count = col.querySelectorAll('.task-card').length;
+                const badge = col.querySelector('.column-header .chip');
+                if (badge) badge.textContent = count;
+            });
+        }
+    })();
+</script>
+{% endblock %}
 {% endblock %}
