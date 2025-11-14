@@ -170,3 +170,33 @@ class Comment(db.Model):
 
     task = db.relationship('Task', back_populates='comments')
     author = db.relationship('User')
+
+
+class ApiToken(db.Model):
+    __tablename__ = 'api_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = db.Column(db.String(120))
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)  # sha256 hex
+    created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
+    last_used_at = db.Column(db.DateTime)
+    revoked = db.Column(db.Boolean, default=False, nullable=False)
+
+    user = db.relationship('User')
+
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    actor_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    action = db.Column(db.String(100), nullable=False)
+    entity_type = db.Column(db.String(50), nullable=False)
+    entity_id = db.Column(db.Integer)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id', ondelete='SET NULL'))
+    meta = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
+
+    actor = db.relationship('User', foreign_keys=[actor_id])
+    project = db.relationship('Project', foreign_keys=[project_id])

@@ -32,7 +32,8 @@
                     <button class="btn" type="submit">Zmień</button>
                 </form>
                 <form method="post"
-                    action="{{ url_for('projects.remove_member', project_id=project.id, membership_id=m.id) }}">
+                    action="{{ url_for('projects.remove_member', project_id=project.id, membership_id=m.id) }}"
+                    onsubmit="return confirm('Usunąć tego członka z projektu?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button class="btn btn-danger" type="submit">Usuń</button>
                 </form>

@@ -5,6 +5,7 @@ from bleach import clean
 from .. import db
 from ..models import Task, Project, Comment, Membership, User
 from ..security.permissions import require_project_membership
+from ..security.audit import log_action
 from ..forms import TaskForm, CommentForm
 
 bp = Blueprint('tasks', __name__)
@@ -13,11 +14,28 @@ bp = Blueprint('tasks', __name__)
 @bp.get('/')
 @login_required
 def list_tasks():
-    # Only tasks from user's projects
+    # Only tasks from user's projects + filters
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     pids = [m.project_id for m in memberships]
-    tasks = Task.query.filter(Task.project_id.in_(pids)).order_by(Task.created_at.desc()).limit(100).all() if pids else []
-    return render_template('tasks/list.html', tasks=tasks)
+    q = Task.query.filter(Task.project_id.in_(pids)) if pids else Task.query.filter(False)
+    # Filters
+    text = (request.args.get('q') or '').strip()
+    status = request.args.get('status')
+    priority = request.args.get('priority')
+    project_id = request.args.get('project', type=int)
+    if text:
+        like = f"%{text}%"
+        q = q.filter((Task.title.ilike(like)) | (Task.description.ilike(like)))
+    if status in ('todo','in_progress','done'):
+        q = q.filter(Task.status == status)
+    if priority in ('low','medium','high'):
+        q = q.filter(Task.priority == priority)
+    if project_id and project_id in pids:
+        q = q.filter(Task.project_id == project_id)
+    tasks = q.order_by(Task.created_at.desc()).limit(300).all()
+    # Provide project list for filter select
+    projects = Project.query.filter(Project.id.in_(pids)).order_by(Project.name.asc()).all() if pids else []
+    return render_template('tasks/list.html', tasks=tasks, projects=projects, selected_project=project_id)
 
 
 @bp.route('/create', methods=['GET', 'POST'])
@@ -92,12 +110,17 @@ def add_comment(task_id: int):
 @login_required
 def update_status(task_id: int):
     t = Task.query.get_or_404(task_id)
-    require_project_membership(t.project_id)
+    role = require_project_membership(t.project_id)
+    if role == 'viewer':
+        flash('Brak uprawnień do zmiany statusu', 'danger')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
     new_status = request.form.get('status')
     if new_status not in ('todo','in_progress','done'):
         flash('Niepoprawny status', 'danger')
     else:
         t.status = new_status
+        db.session.commit()
+        log_action('task.status', 'task', t.id, t.project_id, meta={'status': new_status})
         db.session.commit()
         flash('Zmieniono status', 'info')
     return redirect(url_for('tasks.task_detail', task_id=task_id))
@@ -107,7 +130,10 @@ def update_status(task_id: int):
 @login_required
 def update_assignee(task_id: int):
     t = Task.query.get_or_404(task_id)
-    require_project_membership(t.project_id)
+    role = require_project_membership(t.project_id)
+    if role == 'viewer':
+        flash('Brak uprawnień do zmiany przypisania', 'danger')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
     new_assignee_id = request.form.get('assignee', type=int)
     if new_assignee_id is None:
         flash('Brak wskazanego użytkownika', 'danger')
@@ -118,6 +144,8 @@ def update_assignee(task_id: int):
         flash('Użytkownik nie jest członkiem projektu', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     t.assignee_id = new_assignee_id
+    db.session.commit()
+    log_action('task.assignee', 'task', t.id, t.project_id, meta={'assignee_id': new_assignee_id})
     db.session.commit()
     flash('Zmieniono przypisanie zadania', 'success')
     return redirect(url_for('tasks.task_detail', task_id=task_id))
@@ -132,6 +160,8 @@ def delete_task(task_id: int):
         flash('Brak uprawnień do usunięcia zadania', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     db.session.delete(t)
+    db.session.commit()
+    log_action('task.delete', 'task', task_id, t.project_id)
     db.session.commit()
     flash('Usunięto zadanie', 'info')
     return redirect(url_for('tasks.list_tasks'))
@@ -151,6 +181,8 @@ def delete_comment(task_id: int, comment_id: int):
         flash('Brak uprawnień do usunięcia komentarza', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     db.session.delete(c)
+    db.session.commit()
+    log_action('comment.delete', 'comment', comment_id, t.project_id)
     db.session.commit()
     flash('Usunięto komentarz', 'info')
     return redirect(url_for('tasks.task_detail', task_id=task_id))

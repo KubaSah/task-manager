@@ -5,6 +5,7 @@ from bleach import clean
 from .. import db
 from ..models import Project, Membership, User
 from ..security.permissions import require_project_membership
+from ..security.audit import log_action
 from ..forms import ProjectForm
  
 
@@ -36,6 +37,8 @@ def create_project():
         owner_membership = Membership(user_id=current_user.id, project_id=p.id, role='owner')
         db.session.add(owner_membership)
         db.session.commit()
+        log_action('project.create', 'project', p.id, p.id)
+        db.session.commit()
         flash('Projekt utworzony', 'success')
         return redirect(url_for('projects.list_projects'))
     return render_template('projects/create.html', form=form)
@@ -56,6 +59,8 @@ def delete_project(project_id: int):
     # Require owner or admin (project-level)
     _ = require_project_membership(project_id, roles=('owner','admin'))
     db.session.delete(p)
+    db.session.commit()
+    log_action('project.delete', 'project', project_id, project_id)
     db.session.commit()
     flash('Projekt usunięty', 'info')
     return redirect(url_for('projects.list_projects'))
@@ -93,6 +98,8 @@ def add_member(project_id: int):
     m = Membership(user_id=user.id, project_id=project_id, role=role)
     db.session.add(m)
     db.session.commit()
+    log_action('project.member.add', 'membership', m.id, project_id, meta={'user_id': user.id, 'role': role})
+    db.session.commit()
     flash('Dodano członka projektu', 'success')
     return redirect(url_for('projects.project_members', project_id=project_id))
 
@@ -114,6 +121,8 @@ def change_member_role(project_id: int, membership_id: int):
         return redirect(url_for('projects.project_members', project_id=project_id))
     m.role = new_role
     db.session.commit()
+    log_action('project.member.role_change', 'membership', m.id, project_id, meta={'new_role': new_role, 'user_id': m.user_id})
+    db.session.commit()
     flash('Zmieniono rolę', 'success')
     return redirect(url_for('projects.project_members', project_id=project_id))
 
@@ -130,6 +139,8 @@ def remove_member(project_id: int, membership_id: int):
         flash('Nie można usunąć właściciela projektu', 'danger')
         return redirect(url_for('projects.project_members', project_id=project_id))
     db.session.delete(m)
+    db.session.commit()
+    log_action('project.member.remove', 'membership', membership_id, project_id, meta={'user_id': m.user_id})
     db.session.commit()
     flash('Usunięto członka projektu', 'info')
     return redirect(url_for('projects.project_members', project_id=project_id))

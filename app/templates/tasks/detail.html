@@ -40,7 +40,7 @@
                 <button class="btn" type="submit">Ok</button>
             </form>
             <form method="post" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
-                style="display:flex; align-items:center;">
+                style="display:flex; align-items:center;" onsubmit="return confirm('Usunąć to zadanie?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <button class="btn btn-danger" type="submit">Usuń zadanie</button>
             </form>
@@ -56,7 +56,7 @@
                 <div class="meta" style="margin-bottom:4px">{{ c.author.name if c.author else 'anon' }}</div>
                 <div>{{ c.content|safe }}</div>
                 <form method="post" action="{{ url_for('tasks.delete_comment', task_id=task.id, comment_id=c.id) }}"
-                    style="margin-top:6px;">
+                    style="margin-top:6px;" onsubmit="return confirm('Usunąć komentarz?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button class="btn btn-danger" type="submit" style="font-size:11px; padding:4px 8px;">Usuń</button>
                 </form>

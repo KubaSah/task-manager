@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}API Tokens{% endblock %}
+{% block section_title %}API Tokens{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px;">
+    <h2 style="margin-top:0">Utwórz nowy token</h2>
+    <form method="post" action="{{ url_for('core.create_token_page') }}"
+        style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="text" name="name" placeholder="Nazwa (opcjonalnie)">
+        <button class="btn btn-primary" type="submit">Utwórz</button>
+    </form>
+    <p class="muted" style="margin-top:6px">Uwaga: surowy token wyświetlany jest tylko raz po utworzeniu.</p>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0">Twoje tokeny</h2>
+    <div class="grid" style="gap:10px;">
+        {% for t in tokens %}
+        <div class="card"
+            style="padding:10px; background: transparent; border-color: rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div>
+                <div><strong>{{ t.name or 'Bez nazwy' }}</strong> {% if t.revoked %}<span class="chip">REVOKED</span>{%
+                    endif %}</div>
+                <div class="meta">Utworzono: {{ t.created_at }}{% if t.last_used_at %} • Ostatnie użycie: {{
+                    t.last_used_at }}{% endif %}</div>
+            </div>
+            {% if not t.revoked %}
+            <form method="post" action="{{ url_for('core.revoke_token_page', token_id=t.id) }}"
+                onsubmit="return confirm('Unieważnić ten token? Aplikacje używające tego tokena utracą dostęp.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button class="btn btn-danger" type="submit">Unieważnij</button>
+            </form>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="muted">Brak tokenów</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

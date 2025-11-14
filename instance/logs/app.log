@@ -31,3 +31,27 @@
 [2025-11-11 18:24:45,514] INFO app: auth_login_success user_id=1 provider=google
 [2025-11-11 18:27:36,513] INFO app: Logging initialized
 [2025-11-11 18:27:41,750] INFO app: Logging initialized
+[2025-11-14 13:36:11,595] INFO app: Logging initialized
+[2025-11-14 13:36:12,577] INFO app: Logging initialized
+[2025-11-14 13:36:27,268] INFO app: 404 Not Found
+[2025-11-14 13:37:06,797] INFO app: Logging initialized
+[2025-11-14 13:37:26,773] INFO app: Logging initialized
+[2025-11-14 13:37:27,703] INFO app: Logging initialized
+[2025-11-14 13:37:29,891] INFO app: 404 Not Found
+[2025-11-14 13:37:52,454] INFO app: auth_login_success user_id=1 provider=google
+[2025-11-14 13:38:46,139] INFO app: Logging initialized
+[2025-11-14 13:39:10,286] INFO app: Logging initialized
+[2025-11-14 13:39:13,852] INFO app: auth_logout user_id=None
+[2025-11-14 13:39:18,670] INFO app: auth_login_success user_id=1 provider=google
+[2025-11-14 13:39:20,146] INFO app: auth_logout user_id=None
+[2025-11-14 13:39:21,944] INFO app: auth_login_success user_id=1 provider=github
+[2025-11-14 13:39:23,130] INFO app: auth_logout user_id=None
+[2025-11-14 13:39:27,963] INFO app: auth_login_success user_id=1 provider=google
+[2025-11-14 13:43:46,597] INFO app: Logging initialized
+[2025-11-14 14:09:48,214] INFO app: Logging initialized
+[2025-11-14 14:09:49,104] INFO app: Logging initialized
+[2025-11-14 14:10:31,724] INFO app: auth_logout user_id=None
+[2025-11-14 14:10:34,265] INFO app: auth_login_success user_id=1 provider=github
+[2025-11-14 14:10:35,595] INFO app: auth_logout user_id=None
+[2025-11-14 14:10:48,931] INFO app: 404 Not Found
+[2025-11-14 14:10:55,952] INFO app: auth_login_success user_id=1 provider=google

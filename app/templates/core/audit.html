@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Audit log{% endblock %}
+{% block section_title %}Audit log{% endblock %}
+{% block content %}
+<div
+    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
+    <h1>Audit</h1>
+    <form method="get" action="{{ url_for('core.audit_page') }}" style="display:flex; gap:8px; align-items:center;">
+        <select name="project">
+            <option value="">Wszystkie projekty</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}" {% if request.args.get('project', type=int)==p.id %}selected{% endif %}>{{ p.key
+                }} — {{ p.name }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn" type="submit">Filtruj</button>
+        <a class="btn" href="{{ url_for('core.audit_page') }}">Wyczyść</a>
+    </form>
+</div>
+
+<div class="grid" style="gap:10px;">
+    {% for e in logs %}
+    <div class="card" style="padding:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div><strong>{{ e.action }}</strong> <span class="meta">{{ e.entity_type }} #{{ e.entity_id or '-' }}</span>
+            </div>
+            <div class="meta">{{ e.created_at }}</div>
+        </div>
+        <div class="meta" style="margin-top:4px;">Projekt: {{ e.project_id or '-' }} • Aktor: {{ e.actor_id or '-' }}
+        </div>
+        {% if e.meta %}
+        <pre class="meta" style="white-space:pre-wrap; margin:6px 0 0;">{{ e.meta }}</pre>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="muted">Brak wpisów audytu</div>
+    {% endfor %}
+</div>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+    <div class="meta">Strona {{ page }} / {{ pages }} • Łącznie: {{ total }}</div>
+    <div style="display:flex; gap:8px;">
+        {% if page > 1 %}<a class="btn"
+            href="{{ url_for('core.audit_page', page=page-1, project=request.args.get('project')) }}">Poprzednia</a>{%
+        endif %}
+        {% if page < pages %}<a class="btn"
+            href="{{ url_for('core.audit_page', page=page+1, project=request.args.get('project')) }}">Następna</a>{%
+            endif %}
+            <a class="btn" href="{{ url_for('core.audit_export', project=request.args.get('project')) }}">Export CSV</a>
+    </div>
+</div>
+{% endblock %}

@@ -2,9 +2,35 @@
 {% block title %}Zadania{% endblock %}
 {% block section_title %}Zadania{% endblock %}
 {% block content %}
-<div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 14px;">
+<div
+    style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 14px; gap:10px; flex-wrap:wrap;">
     <h1>Zadania</h1>
+    <form method="get" action="{{ url_for('tasks.list_tasks') }}" style="display:flex; gap:8px; align-items:center;">
+        <input type="text" name="q" placeholder="Szukaj…" value="{{ request.args.get('q','') }}" />
+        <select name="status">
+            <option value="">Status</option>
+            {% for val, label in [('todo','Do zrobienia'), ('in_progress','W toku'), ('done','Zrobione')] %}
+            <option value="{{ val }}" {% if request.args.get('status')==val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="priority">
+            <option value="">Priorytet</option>
+            {% for val, label in [('low','Niski'), ('medium','Średni'), ('high','Wysoki')] %}
+            <option value="{{ val }}" {% if request.args.get('priority')==val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="project">
+            <option value="">Projekt</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}" {% if selected_project==p.id %}selected{% endif %}>{{ p.key }} — {{ p.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <button class="btn" type="submit">Filtruj</button>
+        <a class="btn" href="{{ url_for('tasks.list_tasks') }}">Wyczyść</a>
+    </form>
     <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}">+ Nowe zadanie</a>
+
 </div>
 <div class="board">
     {% set grouped = {'todo': [], 'in_progress': [], 'done': []} %}

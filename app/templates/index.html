@@ -16,7 +16,11 @@
     <div class="card">
         <h2>Bezpieczeństwo</h2>
         <p class="muted">Włączone nagłówki: CSP, HSTS (prod), X-Frame-Options.</p>
-        <a class="btn" href="{{ url_for('auth.login') }}">Dostęp</a>
+        {% if current_user.is_authenticated %}
+        <a class="btn" href="{{ url_for('core.account_page') }}">Konto</a>
+        {% else %}
+        <a class="btn" href="{{ url_for('auth.login') }}">Zaloguj</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

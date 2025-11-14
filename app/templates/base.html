@@ -40,6 +40,8 @@
                 <div class="user">
                     {% if current_user.is_authenticated %}
                     <span>{{ current_user.name }}</span>
+                    <a class="btn btn-ghost" href="{{ url_for('core.tokens_page') }}">API Tokens</a>
+                    <a class="btn btn-ghost" href="{{ url_for('core.audit_page') }}">Audit</a>
                     <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Wyloguj</a>
                     {% else %}
                     <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Zaloguj</a>
