@@ -12,6 +12,7 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
 from config import get_config
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Extensions
 csrf = CSRFProtect()
@@ -42,6 +43,10 @@ def create_app():
         frame_options='DENY',
         permissions_policy={"geolocation": "()"},
     )
+
+    # Ensure correct URL scheme / remote IP when behind Heroku's reverse proxy
+    # This allows url_for(..., _external=True) to generate https links and Talisman force_https to work.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
     login_manager.login_view = 'auth.login'
     from .models import User  # imported after app & db setup
@@ -111,12 +116,19 @@ def create_app():
 def setup_logging(app):
     log_dir = os.path.join(app.instance_path, 'logs')
     os.makedirs(log_dir, exist_ok=True)
-    file_handler = RotatingFileHandler(
-        os.path.join(log_dir, 'app.log'), maxBytes=1_000_000, backupCount=5
-    )
     fmt = logging.Formatter('[%(asctime)s] %(levelname)s %(name)s: %(message)s')
-    file_handler.setFormatter(fmt)
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
+    # On Heroku (DYNO env var) use stdout; filesystem is ephemeral and logs should go to aggregated logging
+    if 'DYNO' in os.environ:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(fmt)
+        stream_handler.setLevel(logging.INFO)
+        app.logger.addHandler(stream_handler)
+    else:
+        file_handler = RotatingFileHandler(
+            os.path.join(log_dir, 'app.log'), maxBytes=1_000_000, backupCount=5
+        )
+        file_handler.setFormatter(fmt)
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
     app.logger.setLevel(logging.INFO)
     app.logger.info('Logging initialized')

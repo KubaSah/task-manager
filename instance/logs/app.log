@@ -55,3 +55,10 @@
 [2025-11-14 14:10:35,595] INFO app: auth_logout user_id=None
 [2025-11-14 14:10:48,931] INFO app: 404 Not Found
 [2025-11-14 14:10:55,952] INFO app: auth_login_success user_id=1 provider=google
+[2025-11-14 15:47:49,389] INFO app: Logging initialized
+[2025-11-14 15:48:52,519] INFO app: Logging initialized
+[2025-11-14 15:52:30,578] INFO app: Logging initialized
+[2025-11-14 15:52:56,444] INFO app: Logging initialized
+[2025-11-14 15:52:57,360] INFO app: Logging initialized
+[2025-11-14 15:53:10,848] INFO app: auth_login_success user_id=1 provider=google
+[2025-11-14 15:53:28,314] INFO app: auth_logout user_id=None

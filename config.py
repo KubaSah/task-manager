@@ -1,14 +1,56 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 
+# Load .env explicitly before reading os.environ
+load_dotenv()
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-secret-change")
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL",
-        f"sqlite:///{os.path.join(BASE_DIR, 'app.db')}"
-    )
+    _env = os.environ.get('FLASK_ENV', 'development')
+
+    # Build Postgres URL (no SQLite fallback outside of testing)
+    _raw_db_url = os.environ.get("DATABASE_URL")
+    if not _raw_db_url and _env != 'testing':
+        host = os.environ.get('POSTGRES_HOST')
+        dbname = os.environ.get('POSTGRES_DB')
+        user = os.environ.get('POSTGRES_USER')
+        password = os.environ.get('POSTGRES_PASSWORD')
+        port = os.environ.get('POSTGRES_PORT', '5432')
+        if all([host, dbname, user, password]):
+            _raw_db_url = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+        else:
+            # Fail fast to avoid silently using SQLite
+            raise RuntimeError(
+                "Postgres configuration incomplete. Set DATABASE_URL lub POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD (opcjonalnie POSTGRES_PORT)."
+            )
+    if _env == 'testing':
+        # tests keep isolated fast in-memory DB
+        _raw_db_url = "sqlite:///:memory:"
+
+    if _raw_db_url and _raw_db_url.startswith("postgres://"):
+        # Normalize for SQLAlchemy 2.x which expects 'postgresql://'
+        _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+
+    # Optional SSL mode and connect timeout
+    _sslmode = os.environ.get("DATABASE_SSLMODE")  # e.g. require, verify-full
+    if _sslmode and _raw_db_url.startswith('postgresql://') and 'sslmode=' not in _raw_db_url:
+        connector = '&' if '?' in _raw_db_url else '?'
+        _raw_db_url = f"{_raw_db_url}{connector}sslmode={_sslmode}"
+    _timeout = os.environ.get("DATABASE_CONNECT_TIMEOUT")
+    if _timeout and _raw_db_url.startswith('postgresql://') and 'connect_timeout=' not in _raw_db_url:
+        connector = '&' if '?' in _raw_db_url else '?'
+        _raw_db_url = f"{_raw_db_url}{connector}connect_timeout={_timeout}"
+
+    SQLALCHEMY_DATABASE_URI = _raw_db_url
+    _pool_size = int(os.environ.get('DATABASE_POOL_SIZE', '5'))
+    _pool_overflow = int(os.environ.get('DATABASE_POOL_MAX_OVERFLOW', '2'))
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_size": _pool_size,
+        "max_overflow": _pool_overflow,
+    }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "0") == "1"
