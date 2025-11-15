@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from bleach import clean
 
@@ -111,18 +111,25 @@ def add_comment(task_id: int):
 def update_status(task_id: int):
     t = Task.query.get_or_404(task_id)
     role = require_project_membership(t.project_id)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if role == 'viewer':
+        if is_ajax:
+            return jsonify({'ok': False, 'error': 'forbidden'}), 403
         flash('Brak uprawnień do zmiany statusu', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     new_status = request.form.get('status')
     if new_status not in ('todo','in_progress','done'):
+        if is_ajax:
+            return jsonify({'ok': False, 'error': 'invalid_status'}), 400
         flash('Niepoprawny status', 'danger')
-    else:
-        t.status = new_status
-        db.session.commit()
-        log_action('task.status', 'task', t.id, t.project_id, meta={'status': new_status})
-        db.session.commit()
-        flash('Zmieniono status', 'info')
+        return redirect(url_for('tasks.task_detail', task_id=task_id))
+    t.status = new_status
+    db.session.commit()
+    log_action('task.status', 'task', t.id, t.project_id, meta={'status': new_status})
+    db.session.commit()
+    if is_ajax:
+        return jsonify({'ok': True, 'status': new_status})
+    flash('Zmieniono status', 'info')
     return redirect(url_for('tasks.task_detail', task_id=task_id))
 
 
@@ -131,22 +138,31 @@ def update_status(task_id: int):
 def update_assignee(task_id: int):
     t = Task.query.get_or_404(task_id)
     role = require_project_membership(t.project_id)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if role == 'viewer':
+        if is_ajax:
+            return jsonify({'ok': False, 'error': 'forbidden'}), 403
         flash('Brak uprawnień do zmiany przypisania', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     new_assignee_id = request.form.get('assignee', type=int)
     if new_assignee_id is None:
+        if is_ajax:
+            return jsonify({'ok': False, 'error': 'missing_assignee'}), 400
         flash('Brak wskazanego użytkownika', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     # Only allow assignee among project members
     membership = Membership.query.filter_by(project_id=t.project_id, user_id=new_assignee_id).first()
     if not membership:
+        if is_ajax:
+            return jsonify({'ok': False, 'error': 'not_project_member'}), 400
         flash('Użytkownik nie jest członkiem projektu', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     t.assignee_id = new_assignee_id
     db.session.commit()
     log_action('task.assignee', 'task', t.id, t.project_id, meta={'assignee_id': new_assignee_id})
     db.session.commit()
+    if is_ajax:
+        return jsonify({'ok': True, 'assignee_id': new_assignee_id})
     flash('Zmieniono przypisanie zadania', 'success')
     return redirect(url_for('tasks.task_detail', task_id=task_id))
 

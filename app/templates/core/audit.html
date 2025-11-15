@@ -4,17 +4,19 @@
 {% block content %}
 <div
     style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <h1>Audit</h1>
-    <form method="get" action="{{ url_for('core.audit_page') }}" style="display:flex; gap:8px; align-items:center;">
-        <select name="project">
+    <h1 style="margin:0;">Audit</h1>
+    <form method="get" action="{{ url_for('core.audit_page') }}" style="display:flex; gap:6px; align-items:center;">
+        <select name="project" id="project-filter" style="width:160px; font-size:13px; padding:7px 10px;"
+            onchange="this.form.submit()">
             <option value="">Wszystkie projekty</option>
             {% for p in projects %}
             <option value="{{ p.id }}" {% if request.args.get('project', type=int)==p.id %}selected{% endif %}>{{ p.key
-                }} — {{ p.name }}</option>
+                }}</option>
             {% endfor %}
         </select>
-        <button class="btn" type="submit">Filtruj</button>
-        <a class="btn" href="{{ url_for('core.audit_page') }}">Wyczyść</a>
+        {% if request.args.get('project') %}
+        <a class="btn" href="{{ url_for('core.audit_page') }}" style="font-size:13px; padding:7px 10px;">✕</a>
+        {% endif %}
     </form>
 </div>
 

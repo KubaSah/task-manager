@@ -74,6 +74,40 @@ def audit_page():
     return render_template('core/audit.html', logs=logs, projects=projects, page=page, pages=pages, total=total)
 
 
+@bp.get('/api-explorer')
+@login_required
+def api_explorer():
+    """Widok UI pokazujący dostępne API endpointy i przykładowe odpowiedzi."""
+    import json
+    from ..models import Task
+    # Przykładowe dane dla demonstracji
+    memberships = Membership.query.filter_by(user_id=current_user.id).all()
+    pids = [m.project_id for m in memberships]
+    sample_tasks = Task.query.filter(Task.project_id.in_(pids)).limit(5).all() if pids else []
+    tasks_json = json.dumps([
+        {
+            'id': t.id,
+            'project_id': t.project_id,
+            'title': t.title,
+            'status': t.status,
+            'priority': t.priority,
+            'created_at': t.created_at.isoformat() if t.created_at else None
+        } for t in sample_tasks
+    ], indent=2, ensure_ascii=False)
+    
+    endpoints = [
+        {'method': 'GET', 'path': '/api/tasks', 'desc': 'Lista zadań (paginacja, filtry: q, status, priority, project_id)'},
+        {'method': 'POST', 'path': '/api/tasks', 'desc': 'Utwórz zadanie (title, project_id, description?, priority?)'},
+        {'method': 'GET', 'path': '/api/tasks/<id>', 'desc': 'Szczegóły zadania'},
+        {'method': 'PATCH', 'path': '/api/tasks/<id>', 'desc': 'Edycja zadania (title?, description?, status?, priority?)'},
+        {'method': 'POST', 'path': '/api/tasks/<id>/comments', 'desc': 'Dodaj komentarz'},
+        {'method': 'GET', 'path': '/api/tokens', 'desc': 'Lista tokenów API'},
+        {'method': 'POST', 'path': '/api/tokens', 'desc': 'Utwórz token (name?)'},
+        {'method': 'DELETE', 'path': '/api/tokens/<id>', 'desc': 'Unieważnij token'},
+    ]
+    return render_template('core/api_explorer.html', endpoints=endpoints, sample_tasks_json=tasks_json)
+
+
 @bp.get('/audit/export')
 @login_required
 def audit_export():

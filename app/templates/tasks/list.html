@@ -3,34 +3,45 @@
 {% block section_title %}Zadania{% endblock %}
 {% block content %}
 <div
-    style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 14px; gap:10px; flex-wrap:wrap;">
-    <h1>Zadania</h1>
-    <form method="get" action="{{ url_for('tasks.list_tasks') }}" style="display:flex; gap:8px; align-items:center;">
-        <input type="text" name="q" placeholder="Szukaj…" value="{{ request.args.get('q','') }}" />
-        <select name="status">
-            <option value="">Status</option>
-            {% for val, label in [('todo','Do zrobienia'), ('in_progress','W toku'), ('done','Zrobione')] %}
-            <option value="{{ val }}" {% if request.args.get('status')==val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-        <select name="priority">
-            <option value="">Priorytet</option>
-            {% for val, label in [('low','Niski'), ('medium','Średni'), ('high','Wysoki')] %}
-            <option value="{{ val }}" {% if request.args.get('priority')==val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-        <select name="project">
-            <option value="">Projekt</option>
-            {% for p in projects %}
-            <option value="{{ p.id }}" {% if selected_project==p.id %}selected{% endif %}>{{ p.key }} — {{ p.name }}
-            </option>
-            {% endfor %}
-        </select>
-        <button class="btn" type="submit">Filtruj</button>
-        <a class="btn" href="{{ url_for('tasks.list_tasks') }}">Wyczyść</a>
-    </form>
-    <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}">+ Nowe zadanie</a>
-
+    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
+    <h1 style="margin:0;">Zadania</h1>
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <form method="get" action="{{ url_for('tasks.list_tasks') }}" id="filter-form"
+            style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <input type="search" name="q" placeholder="Szukaj…" value="{{ request.args.get('q','') }}"
+                class="filter-input" style="max-width:140px;" />
+            <select name="status" class="filter-select" style="max-width:110px;" onchange="this.form.submit()">
+                <option value="">Status (wszystkie)</option>
+                <option value="TODO" {% if request.args.get('status')=='TODO' %}selected{% endif %}>TODO</option>
+                <option value="IN_PROGRESS" {% if request.args.get('status')=='IN_PROGRESS' %}selected{% endif %}>
+                    W trakcie</option>
+                <option value="DONE" {% if request.args.get('status')=='DONE' %}selected{% endif %}>Zrobione
+                </option>
+            </select>
+            <select name="priority" class="filter-select" style="max-width:100px;" onchange="this.form.submit()">
+                <option value="">Priorytet (wszystkie)</option>
+                <option value="LOW" {% if request.args.get('priority')=='LOW' %}selected{% endif %}>Niski</option>
+                <option value="MEDIUM" {% if request.args.get('priority')=='MEDIUM' %}selected{% endif %}>Średni
+                </option>
+                <option value="HIGH" {% if request.args.get('priority')=='HIGH' %}selected{% endif %}>Wysoki
+                </option>
+            </select>
+            <select name="project" class="filter-select" style="max-width:130px;" onchange="this.form.submit()">
+                <option value="">Projekt</option>
+                {% for p in projects %}
+                <option value="{{ p.id }}" {% if selected_project==p.id %}selected{% endif %}>{{ p.key }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" style="display:none;"></button>
+            {% if request.args.get('q') or request.args.get('status') or request.args.get('priority') or
+            request.args.get('project') %}
+            <a class="btn" href="{{ url_for('tasks.list_tasks') }}" style="font-size:13px; padding:7px 10px;">✕</a>
+            {% endif %}
+        </form>
+        <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}"
+            style="white-space:nowrap; font-size:13px; padding:7px 12px;">+ Zadanie</a>
+    </div>
+</div>
 </div>
 <div class="board">
     {% set grouped = {'todo': [], 'in_progress': [], 'done': []} %}
@@ -87,6 +98,11 @@
                 const taskId = e.dataTransfer.getData('text/plain');
                 const newStatus = col.dataset.status;
                 if (!taskId || !newStatus || !draggedCard) return;
+
+                // Preserve reference to the card before async operations
+                const cardToMove = draggedCard;
+                const originalParent = cardToMove.parentElement;
+
                 try {
                     const body = new URLSearchParams();
                     body.set('status', newStatus);
@@ -94,15 +110,32 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                            'X-CSRFToken': getToken()
+                            'X-CSRF-Token': getToken(),
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
                         body
                     });
+
                     if (resp.ok) {
-                        // Move card in UI optimistycznie
-                        col.appendChild(draggedCard);
-                        // Update counters
-                        updateCounters();
+                        // Try parse JSON, but if it's redirect or HTML, just trust HTTP 200
+                        let data = null;
+                        const contentType = resp.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            data = await resp.json();
+                        }
+
+                        if (!data || data.ok !== false) {
+                            // Success: move card if still valid DOM element and target exists
+                            if (cardToMove && cardToMove.parentElement && col) {
+                                col.appendChild(cardToMove);
+                                updateCounters();
+                                updatePlaceholders();
+                            }
+                        } else {
+                            alert('Nie udało się zmienić statusu: ' + (data.error || 'unknown'));
+                        }
+                    } else if (resp.status === 403) {
+                        alert('Brak uprawnień do zmiany statusu');
                     } else {
                         alert('Nie udało się zmienić statusu (HTTP ' + resp.status + ')');
                     }
@@ -119,6 +152,29 @@
                 const count = col.querySelectorAll('.task-card').length;
                 const badge = col.querySelector('.column-header .chip');
                 if (badge) badge.textContent = count;
+            });
+        }
+
+        function updatePlaceholders() {
+            document.querySelectorAll('.column').forEach(col => {
+                const taskCards = col.querySelectorAll('.task-card');
+                let placeholder = col.querySelector('.card:not(.task-card)');
+
+                if (taskCards.length === 0) {
+                    // No tasks - add placeholder if missing
+                    if (!placeholder) {
+                        placeholder = document.createElement('div');
+                        placeholder.className = 'card';
+                        placeholder.style.opacity = '0.5';
+                        placeholder.innerHTML = '<em>Brak</em>';
+                        col.appendChild(placeholder);
+                    }
+                } else {
+                    // Has tasks - remove placeholder if exists
+                    if (placeholder) {
+                        placeholder.remove();
+                    }
+                }
             });
         }
     })();

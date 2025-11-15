@@ -12,7 +12,7 @@
             <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}?project={{ project.id }}">+ Zadanie</a>
             <a class="btn" href="{{ url_for('tasks.list_tasks') }}">Przejdź do tablicy</a>
             <a class="btn" href="{{ url_for('projects.project_members', project_id=project.id) }}">Członkowie</a>
-            <a class="btn" href="{{ url_for('api.list_tasks') }}">API</a>
+            <a class="btn" href="{{ url_for('core.api_explorer') }}">API</a>
             <a class="btn" href="{{ url_for('projects.list_projects') }}">Wróć do listy</a>
             <form method="post" action="{{ url_for('projects.delete_project', project_id=project.id) }}"
                 style="margin-left:auto;"
