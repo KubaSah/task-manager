@@ -6,7 +6,7 @@
     <title>{% block title %}Secure Taskboard{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=app_version) }}">
     {% block head %}{% endblock %}
 </head>
 
@@ -71,12 +71,10 @@
                     {% block content %}{% endblock %}
                 </div>
             </main>
-            <footer class="app-footer">
-                <span class="muted">Secure Taskboard v{{ app_version }}</span>
-            </footer>
+            {# Version moved to Account page to be less prominent #}
         </section>
     </div>
-    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/app.js', v=app_version) }}" defer></script>
     {% block scripts %}{% endblock %}
 </body>
 
