@@ -54,6 +54,8 @@ class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "0") == "1"
+    # Lax: chroni przed CSRF przy nawigacji cross-site, ale nie psuje powrotu z OAuth
+    SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
     REMEMBER_COOKIE_HTTPONLY = True
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
     WTF_CSRF_ENABLED = True

@@ -44,6 +44,7 @@ def create_app():
         session_cookie_http_only=True,
         frame_options='DENY',
         permissions_policy={"geolocation": "()"},
+        referrer_policy='strict-origin-when-cross-origin',
     )
 
     # Ensure correct URL scheme / remote IP when behind Heroku's reverse proxy

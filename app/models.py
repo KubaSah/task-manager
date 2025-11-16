@@ -139,7 +139,8 @@ class Task(db.Model):
     priority = db.Column(db.String(10), nullable=False, default='medium')  # 'low'|'medium'|'high'
 
     assignee_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
-    creator_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    # Map to existing DB column name 'created_by_id' to maintain backward compatibility
+    creator_id = db.Column('created_by_id', db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
 
     created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
     updated_at = db.Column(db.DateTime, default=now_utc, onupdate=now_utc, nullable=False)

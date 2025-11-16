@@ -7,7 +7,7 @@
     <h1 style="margin:0;">Zadania</h1>
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
         <form method="get" action="{{ url_for('tasks.list_tasks') }}" id="filter-form"
-            style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap; overflow-x:auto; white-space:nowrap;">
             <input type="search" name="q" placeholder="Szukaj…" value="{{ request.args.get('q','') }}"
                 class="filter-input" style="max-width:140px;" />
             <select name="status" class="filter-select" style="max-width:110px;" onchange="this.form.submit()">
@@ -41,7 +41,6 @@
         <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}"
             style="white-space:nowrap; font-size:13px; padding:7px 12px;">+ Zadanie</a>
     </div>
-</div>
 </div>
 <div class="board">
     {% set grouped = {'todo': [], 'in_progress': [], 'done': []} %}
