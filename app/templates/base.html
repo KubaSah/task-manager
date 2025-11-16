@@ -71,6 +71,9 @@
                     {% block content %}{% endblock %}
                 </div>
             </main>
+            <footer class="app-footer">
+                <span class="muted">Secure Taskboard v{{ app_version }}</span>
+            </footer>
         </section>
     </div>
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>

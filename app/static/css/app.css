@@ -366,6 +366,13 @@
     font-size: 14px;
 }
 
+/* App footer */
+.app-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin: 8px 0 0;
+    padding: 10px 16px 14px;
+}
+
 /* Project list cards */
 .project-name {
     margin: 4px 0 8px;

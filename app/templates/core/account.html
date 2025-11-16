@@ -9,6 +9,7 @@
         <div><strong>Email:</strong> {{ current_user.email }}</div>
         <div><strong>ID:</strong> {{ current_user.id }}</div>
         <div><strong>Provider główny:</strong> {{ current_user.provider }}</div>
+        <div class="meta"><strong>Wersja aplikacji:</strong> v{{ app_version }}</div>
     </div>
     <div class="account-actions">
         <a class="btn" href="{{ url_for('core.tokens_page') }}">API Tokens</a>

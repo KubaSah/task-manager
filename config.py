@@ -9,6 +9,8 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-secret-change")
     _env = os.environ.get('FLASK_ENV', 'development')
+    # Application version (can be overridden via env APP_VERSION)
+    APP_VERSION = os.environ.get('APP_VERSION', '0.1.0')
 
     # Build Postgres URL (no SQLite fallback outside of testing)
     _raw_db_url = os.environ.get("DATABASE_URL")

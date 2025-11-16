@@ -148,6 +148,13 @@ def create_app():
         
         return resp
 
+    @app.context_processor
+    def inject_app_version():
+        # Expose app_version to all templates
+        return {
+            'app_version': app.config.get('APP_VERSION', 'dev')
+        }
+
     # Error handlers minimal (expand later)
     @app.errorhandler(400)
     def bad_request(e):
