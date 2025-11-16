@@ -6,24 +6,23 @@
     style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
     <h1 style="margin:0;">Zadania</h1>
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-        <form method="get" action="{{ url_for('tasks.list_tasks') }}" id="filter-form"
-            style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap; overflow-x:auto; white-space:nowrap;">
+        <form method="get" action="{{ url_for('tasks.list_tasks') }}" id="filter-form" class="filter-bar">
             <input type="search" name="q" placeholder="Szukaj…" value="{{ request.args.get('q','') }}"
                 class="filter-input" style="max-width:140px;" />
             <select name="status" class="filter-select" style="max-width:110px;" onchange="this.form.submit()">
                 <option value="">Status (wszystkie)</option>
-                <option value="TODO" {% if request.args.get('status')=='TODO' %}selected{% endif %}>TODO</option>
-                <option value="IN_PROGRESS" {% if request.args.get('status')=='IN_PROGRESS' %}selected{% endif %}>
+                <option value="todo" {% if request.args.get('status')=='todo' %}selected{% endif %}>TODO</option>
+                <option value="in_progress" {% if request.args.get('status')=='in_progress' %}selected{% endif %}>
                     W trakcie</option>
-                <option value="DONE" {% if request.args.get('status')=='DONE' %}selected{% endif %}>Zrobione
+                <option value="done" {% if request.args.get('status')=='done' %}selected{% endif %}>Zrobione
                 </option>
             </select>
             <select name="priority" class="filter-select" style="max-width:100px;" onchange="this.form.submit()">
                 <option value="">Priorytet (wszystkie)</option>
-                <option value="LOW" {% if request.args.get('priority')=='LOW' %}selected{% endif %}>Niski</option>
-                <option value="MEDIUM" {% if request.args.get('priority')=='MEDIUM' %}selected{% endif %}>Średni
+                <option value="low" {% if request.args.get('priority')=='low' %}selected{% endif %}>Niski</option>
+                <option value="medium" {% if request.args.get('priority')=='medium' %}selected{% endif %}>Średni
                 </option>
-                <option value="HIGH" {% if request.args.get('priority')=='HIGH' %}selected{% endif %}>Wysoki
+                <option value="high" {% if request.args.get('priority')=='high' %}selected{% endif %}>Wysoki
                 </option>
             </select>
             <select name="project" class="filter-select" style="max-width:130px;" onchange="this.form.submit()">
