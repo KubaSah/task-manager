@@ -166,5 +166,113 @@ Struktura rekordów: `actor_id`, `action`, `entity_type`, `entity_id`, `project_
 - XSS/SQLi: `tests/test_injection.py`.
 - Dostęp: `tests/test_access_control.py`, `tests/test_permissions.py`.
 
+## Deployment Checklist
+
+### 1. Zmienne środowiskowe (produkcja)
+Upewnij się, że następujące zmienne środowiskowe są ustawione:
+
+```bash
+# Aplikacja
+SECRET_KEY=<losowy, 32+ znaki>
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+FLASK_ENV=production
+
+# OAuth Redirect Base (HTTPS!)
+OAUTH_REDIRECT_BASE=https://twoja-domena.com
+
+# Google OAuth (opcjonalnie)
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxx
+
+# GitHub OAuth (opcjonalnie)
+GITHUB_CLIENT_ID=xxx
+GITHUB_CLIENT_SECRET=xxx
+
+# Sesje i bezpieczeństwo
+SESSION_COOKIE_SECURE=1
+SESSION_COOKIE_SAMESITE=Lax
+PERMANENT_SESSION_LIFETIME=28800  # 8 godzin w sekundach
+```
+
+### 2. Konfiguracja OAuth Providers
+
+#### Google Cloud Console
+1. Przejdź do [Google Cloud Console](https://console.cloud.google.com/)
+2. Wybierz swój projekt lub utwórz nowy
+3. Przejdź do **APIs & Services** → **Credentials**
+4. Edytuj swój OAuth 2.0 Client ID
+5. W sekcji **Authorized redirect URIs** dodaj:
+   ```
+   https://twoja-domena.com/auth/callback/google
+   ```
+6. Zapisz zmiany
+
+#### GitHub OAuth Apps
+1. Przejdź do [GitHub Developer Settings](https://github.com/settings/developers)
+2. Wybierz swoją aplikację OAuth lub utwórz nową
+3. Ustaw **Homepage URL**: `https://twoja-domena.com`
+4. Ustaw **Authorization callback URL**: `https://twoja-domena.com/auth/callback/github`
+5. Zapisz zmiany
+
+### 3. Baza danych
+```bash
+# Uruchom migracje
+flask db upgrade
+
+# Opcjonalnie: zweryfikuj strukturę
+flask db current
+```
+
+### 4. HTTPS i bezpieczeństwo
+- ✅ Upewnij się, że aplikacja jest dostępna tylko przez HTTPS
+- ✅ Sprawdź, czy `SESSION_COOKIE_SECURE=1` jest ustawione
+- ✅ Zweryfikuj nagłówki bezpieczeństwa (użyj [SecurityHeaders.com](https://securityheaders.com))
+- ✅ Upewnij się, że `DEBUG=False` w produkcji
+- ✅ Sprawdź logi aplikacji pod kątem błędów konfiguracji
+
+### 5. Heroku (przykład)
+Jeśli deployu jesz na Heroku:
+
+```bash
+# Ustaw zmienne środowiskowe
+heroku config:set SECRET_KEY="xxx"
+heroku config:set OAUTH_REDIRECT_BASE="https://twoja-app.herokuapp.com"
+heroku config:set GOOGLE_CLIENT_ID="xxx"
+heroku config:set GOOGLE_CLIENT_SECRET="xxx"
+heroku config:set GITHUB_CLIENT_ID="xxx"
+heroku config:set GITHUB_CLIENT_SECRET="xxx"
+
+# Heroku automatycznie ustawia DATABASE_URL dla PostgreSQL
+# Zweryfikuj:
+heroku config:get DATABASE_URL
+
+# Push i migracje
+git push heroku main
+heroku run flask db upgrade
+```
+
+### 6. Weryfikacja po wdrożeniu
+- [ ] Zaloguj się przez Google OAuth
+- [ ] Zaloguj się przez GitHub OAuth
+- [ ] Utwórz projekt testowy
+- [ ] Utwórz zadanie testowe
+- [ ] Sprawdź drag & drop na tablicy zadań
+- [ ] Zweryfikuj logi audytu w `/settings/audit`
+- [ ] Przetestuj filtry i wyszukiwanie
+- [ ] Sprawdź API Explorer (`/settings/api-explorer`)
+- [ ] Wygeneruj i przetestuj API token
+
+### 7. Monitoring i logi
+- Skonfiguruj monitoring uptime (np. UptimeRobot, Pingdom)
+- Przejrzyj logi aplikacji regularnie
+- Ustaw alerty dla błędów 500
+- Monitoruj użycie bazy danych
+
+### 8. Bezpieczeństwo CI/CD
+- ✅ GitHub Actions uruchamia testy przy każdym PR
+- ✅ `pip-audit` skanuje zależności
+- ✅ `bandit` analizuje kod pod kątem podatności
+- Rozważ dodanie SAST/DAST w pipeline
+
 ## Licencja
 Internal academic project.

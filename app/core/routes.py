@@ -40,7 +40,7 @@ def create_token_page():
 @bp.post('/settings/tokens/<int:token_id>/revoke')
 @login_required
 def revoke_token_page(token_id: int):
-    t = ApiToken.query.get_or_404(token_id)
+    t = db.get_or_404(ApiToken, token_id)
     if t.user_id != current_user.id:
         flash('Brak uprawnień', 'danger')
         return redirect(url_for('core.tokens_page'))

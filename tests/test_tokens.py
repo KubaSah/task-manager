@@ -43,7 +43,7 @@ def test_create_and_use_bearer_token():
         assert rev.status_code == 200
         
         # Verify token is revoked in DB
-        tok_revoked = ApiToken.query.get(tid)
+        tok_revoked = db.session.get(ApiToken, tid)
         assert tok_revoked.revoked is True
         
         # Attempt to use revoked token - should fail

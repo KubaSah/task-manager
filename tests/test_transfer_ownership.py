@@ -54,7 +54,7 @@ def test_transfer_ownership_success(client, app):
     
     # Verify changes in database
     with app.app_context():
-        p = Project.query.get(project_id)
+        p = db.session.get(Project, project_id)
         assert p.owner_id == new_owner_id
         
         # Old owner should now be admin

@@ -114,7 +114,7 @@ def create_token():
 @bp.delete('/tokens/<int:token_id>')
 @login_required
 def revoke_token(token_id: int):
-    t = ApiToken.query.get_or_404(token_id)
+    t = db.get_or_404(ApiToken, token_id)
     if t.user_id != current_user.id:
         abort(403)
     t.revoked = True
@@ -127,7 +127,7 @@ def revoke_token(token_id: int):
 @login_required
 def create_task():
     data = _json_required(['title', 'project_id'])
-    project = Project.query.get(data['project_id'])
+    project = db.session.get(Project, data['project_id'])
     if not project:
         abort(404)
     # Require membership for the target project
@@ -149,7 +149,7 @@ def create_task():
 @limiter.limit("60 per minute")
 @login_required
 def get_task(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     require_project_membership(t.project_id)
     return jsonify({
         'id': t.id,
@@ -168,7 +168,7 @@ def get_task(task_id: int):
 @limiter.limit("30 per minute")
 @login_required
 def update_task(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     require_project_membership(t.project_id)
     data = request.get_json(silent=True) or {}
     if 'title' in data:
@@ -194,7 +194,7 @@ def update_task(task_id: int):
 @limiter.limit("30 per minute")
 @login_required
 def add_comment(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     require_project_membership(t.project_id)
     data = _json_required(['content'])
     content = clean(str(data['content']), tags=['b','i','em','strong','code'], strip=True)

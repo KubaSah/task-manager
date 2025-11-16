@@ -65,7 +65,7 @@
     {% endfor %}
 </div>
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
     (function () {
         const getToken = () => document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const board = document.querySelector('.board');

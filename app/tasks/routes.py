@@ -55,7 +55,7 @@ def create_task():
 
     if form.validate_on_submit():
         target_pid = preselected_pid or form.project_id.data
-        project = Project.query.get(target_pid) if target_pid else None
+        project = db.session.get(Project, target_pid) if target_pid else None
         if not project:
             flash('Wybierz projekt', 'danger')
             return redirect(url_for('tasks.create_task'))
@@ -79,7 +79,7 @@ def create_task():
 @bp.get('/<int:task_id>')
 @login_required
 def task_detail(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     require_project_membership(t.project_id)
     # Build assignee choices (members of project)
     memberships = Membership.query.filter_by(project_id=t.project_id).all()
@@ -92,7 +92,7 @@ def task_detail(task_id: int):
 @bp.post('/<int:task_id>/comment')
 @login_required
 def add_comment(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     require_project_membership(t.project_id)
     form = CommentForm()
     if form.validate_on_submit():
@@ -109,7 +109,7 @@ def add_comment(task_id: int):
 @bp.post('/<int:task_id>/status')
 @login_required
 def update_status(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     role = require_project_membership(t.project_id)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if role == 'viewer':
@@ -136,7 +136,7 @@ def update_status(task_id: int):
 @bp.post('/<int:task_id>/assignee')
 @login_required
 def update_assignee(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     role = require_project_membership(t.project_id)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if role == 'viewer':
@@ -170,7 +170,7 @@ def update_assignee(task_id: int):
 @bp.post('/<int:task_id>/delete')
 @login_required
 def delete_task(task_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     role = require_project_membership(t.project_id)
     if role not in ('owner','admin') and t.creator_id != current_user.id:
         flash('Brak uprawnień do usunięcia zadania', 'danger')
@@ -186,9 +186,9 @@ def delete_task(task_id: int):
 @bp.post('/<int:task_id>/comment/<int:comment_id>/delete')
 @login_required
 def delete_comment(task_id: int, comment_id: int):
-    t = Task.query.get_or_404(task_id)
+    t = db.get_or_404(Task, task_id)
     require_project_membership(t.project_id)
-    c = Comment.query.get_or_404(comment_id)
+    c = db.get_or_404(Comment, comment_id)
     if c.task_id != t.id:
         flash('Komentarz nie należy do zadania', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))

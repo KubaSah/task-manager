@@ -74,7 +74,7 @@
             </main>
         </section>
     </div>
-    <script>
+    <script nonce="{{ g.csp_nonce }}">
         // Auto-close mobile menu when clicking a nav link
         document.querySelectorAll('.sidebar .nav a').forEach(link => {
             link.addEventListener('click', () => {

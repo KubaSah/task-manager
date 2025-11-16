@@ -58,7 +58,8 @@ def require_task_membership(task_id: int, roles: tuple[str, ...] | None = None):
         HTTP 404 jeśli zadanie nie istnieje, HTTP 403 jeśli brak dostępu
     """
     from ..models import Task as TaskModel
-    t: TaskModel | None = TaskModel.query.get(task_id)
+    from .. import db
+    t: TaskModel | None = db.session.get(TaskModel, task_id)
     if not t:
         abort(404)
     return require_project_membership(t.project_id, roles)

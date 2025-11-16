@@ -1,6 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import secrets
 
 from flask import Flask, request, g
 from flask_sqlalchemy import SQLAlchemy
@@ -35,11 +36,11 @@ def create_app():
     login_manager.init_app(app)
     limiter.init_app(app)
 
-    # Security headers via Talisman (CSP from config)
-    csp = app.config.get('CSP', None)
+    # Security headers via Talisman
+    # CSP will be set dynamically with nonce in after_request
     Talisman(
         app,
-        content_security_policy=csp,
+        content_security_policy=False,  # Disable Talisman's CSP, we'll set it manually
         force_https=app.config.get('SESSION_COOKIE_SECURE', False),
         session_cookie_http_only=True,
         frame_options='DENY',
@@ -65,7 +66,7 @@ def create_app():
     def load_user(user_id: str):
         if not user_id.isdigit():
             return None
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
     @login_manager.request_loader
     def load_user_from_request(req):
@@ -86,7 +87,7 @@ def create_app():
         ).scalar_one_or_none()
         if not tok:
             return None
-        user = User.query.get(tok.user_id)
+        user = db.session.get(User, tok.user_id)
         if not user:
             return None
         # Update last_used_at (timezone aware)
@@ -118,10 +119,33 @@ def create_app():
     def attach_request_id():
         rid = request.headers.get('X-Request-ID') or os.urandom(8).hex()
         g.request_id = rid
+    
+    # CSP nonce generation for inline scripts/styles
+    @app.before_request
+    def generate_csp_nonce():
+        g.csp_nonce = secrets.token_urlsafe(16)
 
     @app.after_request
-    def add_request_id(resp):
+    def add_security_headers(resp):
+        # Add X-Request-ID
         resp.headers['X-Request-ID'] = getattr(g, 'request_id', '-')
+        
+        # Add CSP with nonce
+        nonce = getattr(g, 'csp_nonce', '')
+        csp_directives = [
+            "default-src 'self'",
+            f"script-src 'self' 'nonce-{nonce}'",
+            f"style-src 'self' 'nonce-{nonce}'",
+            "img-src 'self' data:",
+            "font-src 'self' data:",
+            "connect-src 'self'",
+            "frame-ancestors 'none'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+        ]
+        resp.headers['Content-Security-Policy'] = '; '.join(csp_directives)
+        
         return resp
 
     # Error handlers minimal (expand later)

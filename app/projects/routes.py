@@ -56,7 +56,7 @@ def create_project():
 @bp.route('/<int:project_id>')
 @login_required
 def project_detail(project_id: int):
-    p = Project.query.get_or_404(project_id)
+    p = db.get_or_404(Project, project_id)
     role = require_project_membership(project_id)
     return render_template('projects/detail.html', project=p, role=role)
 
@@ -64,7 +64,7 @@ def project_detail(project_id: int):
 @bp.route('/<int:project_id>/delete', methods=['POST'])
 @login_required
 def delete_project(project_id: int):
-    p = Project.query.get_or_404(project_id)
+    p = db.get_or_404(Project, project_id)
     # Require owner or admin (project-level)
     _ = require_project_membership(project_id, roles=('owner','admin'))
     db.session.delete(p)
@@ -78,7 +78,7 @@ def delete_project(project_id: int):
 @bp.get('/<int:project_id>/members')
 @login_required
 def project_members(project_id: int):
-    p = Project.query.get_or_404(project_id)
+    p = db.get_or_404(Project, project_id)
     role = require_project_membership(project_id)
     memberships = Membership.query.filter_by(project_id=project_id).all()
     can_manage = role in ('owner', 'admin')
@@ -117,7 +117,7 @@ def add_member(project_id: int):
 @login_required
 def change_member_role(project_id: int, membership_id: int):
     _ = require_project_membership(project_id, roles=('owner', 'admin'))
-    m = Membership.query.get_or_404(membership_id)
+    m = db.get_or_404(Membership, membership_id)
     if m.project_id != project_id:
         flash('Nieprawidłowy projekt', 'danger')
         return redirect(url_for('projects.project_members', project_id=project_id))
@@ -140,7 +140,7 @@ def change_member_role(project_id: int, membership_id: int):
 @login_required
 def remove_member(project_id: int, membership_id: int):
     _ = require_project_membership(project_id, roles=('owner', 'admin'))
-    m = Membership.query.get_or_404(membership_id)
+    m = db.get_or_404(Membership, membership_id)
     if m.project_id != project_id:
         flash('Nieprawidłowy projekt', 'danger')
         return redirect(url_for('projects.project_members', project_id=project_id))
@@ -160,7 +160,7 @@ def remove_member(project_id: int, membership_id: int):
 def transfer_ownership(project_id: int):
     """Transfer project ownership to another member. Only current owner can do this."""
     role = require_project_membership(project_id, roles=('owner',))
-    p = Project.query.get_or_404(project_id)
+    p = db.get_or_404(Project, project_id)
     
     # Get new owner user ID
     new_owner_id = request.form.get('new_owner_id', type=int)
