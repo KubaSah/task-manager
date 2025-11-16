@@ -2,7 +2,7 @@
 {% block title %}Nowy projekt{% endblock %}
 {% block section_title %}Nowy projekt{% endblock %}
 {% block content %}
-<div class="card" style="margin-top:14px;">
+<div class="card project-create-card">
     <form method="post">
         {{ form.csrf_token }}
         <div class="field">
@@ -17,13 +17,13 @@
             <label>{{ form.description.label }}</label>
             {{ form.description(rows=5, cols=60) }}
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="form-actions">
             <button class="btn btn-primary" type="submit">Utwórz</button>
             <a class="btn" href="{{ url_for('projects.list_projects') }}">Anuluj</a>
         </div>
         {% for field, errors in form.errors.items() %}
         {% for error in errors %}
-        <div class="alert alert-danger" style="margin-top:10px">{{ field }}: {{ error }}</div>
+        <div class="alert alert-danger alert-error">{{ field }}: {{ error }}</div>
         {% endfor %}
         {% endfor %}
     </form>

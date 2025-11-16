@@ -2,22 +2,21 @@
 {% block title %}Zadanie #{{ task.id }}{% endblock %}
 {% block section_title %}Zadanie #{{ task.id }}{% endblock %}
 {% block content %}
-<div class="grid" style="gap:14px; margin-right:24px;">
+<div class="grid task-detail-grid">
     <div class="card">
-        <h1 style="margin-bottom:6px">{{ task.title }}</h1>
-        <div class="meta" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <h1 class="mb-6">{{ task.title }}</h1>
+        <div class="meta task-meta-row">
             <span class="chip {{ task.status }}">Status: {{ 'Do zrobienia' if task.status=='todo' else ('W toku' if
                 task.status=='in_progress' else 'Zrobione') }}</span>
             <span class="chip">Priorytet: {{ task.priority }}</span>
             {% if task.assignee %}<span class="chip">Przypisane: {{ task.assignee.name }}</span>{% endif %}
         </div>
         {% if task.description %}
-        <div style="margin-top:12px">{{ task.description|safe }}</div>
+        <div class="task-description">{{ task.description|safe }}</div>
         {% endif %}
 
-        <div class="task-actions" style="display:flex; gap:10px; align-items:center; margin-top:12px;">
-            <form method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}"
-                style="display:flex; gap:8px; align-items:center;">
+        <div class="task-actions">
+            <form method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}" class="task-form-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <label for="status" class="meta">Zmień status</label>
                 <select id="status" name="status">
@@ -28,7 +27,7 @@
                 <button class="btn" type="submit">Zastosuj</button>
             </form>
             <form method="post" action="{{ url_for('tasks.update_assignee', task_id=task.id) }}"
-                style="display:flex; gap:8px; align-items:center;">
+                class="task-form-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <label for="assignee" class="meta">Przypisz</label>
                 <select id="assignee" name="assignee">
@@ -39,8 +38,8 @@
                 </select>
                 <button class="btn" type="submit">Ok</button>
             </form>
-            <form method="post" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
-                style="display:flex; align-items:center;" onsubmit="return confirm('Usunąć to zadanie?');">
+            <form method="post" action="{{ url_for('tasks.delete_task', task_id=task.id) }}" class="task-form-inline"
+                data-confirm="Usunąć to zadanie?">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <button class="btn btn-danger" type="submit">Usuń zadanie</button>
             </form>
@@ -50,22 +49,22 @@
 
     <div class="card">
         <h2>Komentarze</h2>
-        <div class="grid" style="gap:8px;">
+        <div class="grid comments-grid">
             {% for c in task.comments %}
-            <div class="card" style="padding:10px; background: transparent; border-color: rgba(255,255,255,0.06);">
-                <div class="meta" style="margin-bottom:4px">{{ c.author.name if c.author else 'anon' }}</div>
+            <div class="card comment-card">
+                <div class="meta comment-author">{{ c.author.name if c.author else 'anon' }}</div>
                 <div>{{ c.content }}</div>
                 <form method="post" action="{{ url_for('tasks.delete_comment', task_id=task.id, comment_id=c.id) }}"
-                    style="margin-top:6px;" onsubmit="return confirm('Usunąć komentarz?');">
+                    class="comment-delete-form" data-confirm="Usunąć komentarz?">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <button class="btn btn-danger" type="submit" style="font-size:11px; padding:4px 8px;">Usuń</button>
+                    <button class="btn btn-danger btn-delete-comment" type="submit">Usuń</button>
                 </form>
             </div>
             {% else %}
             <div class="muted">Brak komentarzy</div>
             {% endfor %}
         </div>
-        <form method="post" action="{{ url_for('tasks.add_comment', task_id=task.id) }}" style="margin-top:10px;">
+        <form method="post" action="{{ url_for('tasks.add_comment', task_id=task.id) }}" class="add-comment-form">
             {{ comment_form.csrf_token }}
             <div class="field">
                 {{ comment_form.content(rows=3, cols=60) }}

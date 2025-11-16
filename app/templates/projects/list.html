@@ -2,21 +2,21 @@
 {% block title %}Projekty{% endblock %}
 {% block section_title %}Projekty{% endblock %}
 {% block content %}
-<div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 14px;">
-    <h1>Projekty</h1>
+<div class="page-toolbar">
+    <h1 class="heading-no-margin">Projekty</h1>
     <a class="btn btn-primary" href="{{ url_for('projects.create_project') }}">+ Nowy projekt</a>
 </div>
 
-<div class="grid cols-3">
+<div class="grid cols-3 projects-grid">
     {% for p in projects %}
-    <div class="card">
+    <div class="card project-card">
         <div class="meta">{{ p.key }}</div>
-        <div class="task-title" style="margin:4px 0 8px">{{ p.name }}</div>
+        <div class="task-title project-name">{{ p.name }}</div>
         {% if p.description %}
-        <p class="muted" style="margin:0 0 10px">{{ p.description[:120] }}{% if p.description|length > 120 %}…{% endif
+        <p class="muted project-desc">{{ p.description[:120] }}{% if p.description|length > 120 %}…{% endif
             %}</p>
         {% endif %}
-        <div style="display:flex; gap:8px; align-items:center; justify-content: space-between;">
+        <div class="project-card-footer">
             <span class="chip">Rola: {{ roles_by_project.get(p.id, 'member') }}</span>
             <a class="btn" href="{{ url_for('projects.project_detail', project_id=p.id) }}">Otwórz</a>
         </div>

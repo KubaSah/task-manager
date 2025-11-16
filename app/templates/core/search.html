@@ -4,10 +4,10 @@
 {% block section_title %}Wyniki wyszukiwania{% endblock %}
 
 {% block content %}
-<div class="card" style="margin-top:10px">
+<div class="card search-card">
     <div class="card-body">
         <form action="{{ url_for('core.search') }}" method="get" class="filter-bar">
-            <input type="search" name="q" class="filter-input" style="max-width:240px" value="{{ q or '' }}"
+            <input type="search" name="q" class="filter-input search-input" value="{{ q or '' }}"
                 placeholder="Szukaj w projektach i zadaniach…" />
             <button class="btn btn-primary" type="submit">Szukaj</button>
         </form>
@@ -15,9 +15,9 @@
 </div>
 
 {% if not q %}
-<p style="margin-top:10px">Wpisz frazę, aby rozpocząć wyszukiwanie.</p>
+<p class="search-prompt">Wpisz frazę, aby rozpocząć wyszukiwanie.</p>
 {% else %}
-<div class="grid" style="margin-top:10px">
+<div class="grid search-results">
     <div>
         <h3>Projekty</h3>
         {% if projects %}

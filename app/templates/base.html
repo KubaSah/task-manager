@@ -12,8 +12,7 @@
 
 <body>
     <div class="layout">
-        <button class="mobile-menu-toggle" aria-label="Toggle menu"
-            onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
             <span></span>
             <span></span>
             <span></span>
@@ -37,7 +36,7 @@
         </aside>
         <section>
             <header class="topbar">
-                <div style="display:flex; align-items:center; gap:10px">
+                <div class="section-title-wrap">
                     <strong>{% block section_title %}{% endblock %}</strong>
                 </div>
                 <div class="search">
@@ -74,20 +73,7 @@
             </main>
         </section>
     </div>
-    <script nonce="{{ g.csp_nonce }}">
-        // Auto-close mobile menu when clicking a nav link
-        document.querySelectorAll('.sidebar .nav a').forEach(link => {
-            link.addEventListener('click', () => {
-                document.querySelector('.sidebar').classList.remove('open');
-            });
-        });
-        // Close menu when clicking overlay
-        document.querySelector('.sidebar')?.addEventListener('click', (e) => {
-            if (e.target === e.currentTarget && window.innerWidth <= 980) {
-                e.currentTarget.classList.remove('open');
-            }
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
     {% block scripts %}{% endblock %}
 </body>
 

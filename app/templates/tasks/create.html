@@ -12,7 +12,7 @@
             {{ form.project_id() }}
         </div>
         {% else %}
-        <div class="alert alert-warning" style="margin-bottom:12px;">Nie masz jeszcze projektów. <a
+        <div class="alert alert-warning alert-no-projects">Nie masz jeszcze projektów. <a
                 href="{{ url_for('projects.create_project') }}" class="underline">Utwórz projekt</a> aby móc dodawać
             zadania.</div>
         {% endif %}
@@ -30,7 +30,7 @@
             <label>{{ form.description.label }}</label>
             {{ form.description(rows=6, cols=60) }}
         </div>
-        <div class="field" style="display:flex; gap:10px; align-items:center;">
+        <div class="field field-row">
             <div>
                 <label>{{ form.status.label }}</label>
                 {{ form.status() }}
@@ -40,13 +40,13 @@
                 {{ form.priority() }}
             </div>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="form-actions">
             <button class="btn btn-primary" type="submit">Utwórz</button>
             <a class="btn" href="{{ url_for('tasks.list_tasks') }}">Anuluj</a>
         </div>
         {% for field, errors in form.errors.items() %}
         {% for error in errors %}
-        <div class="alert alert-danger" style="margin-top:10px">{{ field }}: {{ error }}</div>
+        <div class="alert alert-danger alert-error">{{ field }}: {{ error }}</div>
         {% endfor %}
         {% endfor %}
     </form>

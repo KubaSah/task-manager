@@ -1,3 +1,528 @@
+/* Page toolbar used on list screens (e.g., Projects) */
+.page-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    /* większy odstęp pod + Nowy projekt */
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.heading-no-margin {
+    margin: 0;
+}
+
+.projects-grid {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+/* Task list filters and toolbar */
+.filter-search {
+    max-width: 180px;
+}
+
+.filter-priority {
+    max-width: 130px;
+}
+
+.filter-project {
+    max-width: 150px;
+}
+
+.hidden-submit {
+    display: none;
+}
+
+.btn-clear-filter {
+    font-size: 13px;
+    padding: 7px 10px;
+}
+
+.btn-add-task {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 7px 12px;
+}
+
+.task-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.task-desc-preview {
+    font-size: 12px;
+}
+
+.card-empty {
+    opacity: 0.5;
+}
+
+/* Task detail page */
+.task-detail-grid {
+    gap: 14px;
+    margin-right: 24px;
+}
+
+.task-meta-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.task-description {
+    margin-top: 12px;
+}
+
+.task-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.task-form-inline {
+    display: flex;
+    align-items: center;
+}
+
+.comments-grid {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.comment-card {
+    padding: 10px;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.comment-author {
+    margin-bottom: 4px;
+}
+
+.comment-delete-form {
+    margin-top: 6px;
+}
+
+.btn-delete-comment {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+.add-comment-form {
+    margin-top: 10px;
+}
+
+/* Task create page */
+.alert-no-projects {
+    margin-bottom: 12px;
+}
+
+.field-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.alert-error {
+    margin-top: 10px;
+}
+
+/* Audit page */
+.btn-filter-clear {
+    font-size: 13px;
+    padding: 7px 10px;
+}
+
+.audit-grid {
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.audit-card {
+    padding: 10px;
+}
+
+.audit-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.audit-card-meta {
+    margin-top: 4px;
+}
+
+.audit-card-pre {
+    white-space: pre-wrap;
+    margin: 6px 0 0;
+}
+
+.audit-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+}
+
+.audit-pagination-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* Search page */
+.search-card {
+    margin-top: 10px;
+}
+
+.search-input {
+    max-width: 240px;
+}
+
+.search-prompt {
+    margin-top: 10px;
+}
+
+.search-results {
+    margin-top: 10px;
+}
+
+/* API Explorer page */
+.api-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.api-endpoints-card {
+    margin-bottom: 20px;
+}
+
+.api-section-title {
+    margin-top: 0;
+}
+
+.api-grid {
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.api-endpoint-card {
+    padding: 10px;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.api-endpoint-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.api-method-chip {
+    min-width: 60px;
+    text-align: center;
+}
+
+.api-path {
+    flex: 1;
+}
+
+.api-endpoint-desc {
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.api-code-block {
+    background: #1a1a1a;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.api-params-section {
+    margin-top: 12px;
+}
+
+.api-params-title {
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+
+.api-params-list {
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.api-usage-card {
+    margin-top: 20px;
+}
+
+.api-usage-list {
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.api-example-note {
+    margin-top: 12px;
+}
+
+/* Account page */
+.account-card {
+    margin-bottom: 16px;
+}
+
+.account-title {
+    margin-top: 0;
+}
+
+.account-grid {
+    gap: 6px;
+}
+
+.account-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Login page */
+.login-container {
+    max-width: 500px;
+    margin: 60px auto;
+    text-align: center;
+}
+
+.login-card {
+    padding: 40px;
+}
+
+.login-title {
+    margin-bottom: 30px;
+}
+
+.login-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.btn-oauth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 24px;
+    font-size: 16px;
+    border-radius: 8px;
+    color: white;
+    text-decoration: none;
+    border: none;
+    transition: background 0.2s;
+}
+
+.btn-google {
+    background: #4285F4;
+}
+
+.btn-github {
+    background: #24292e;
+}
+
+.btn-oauth-text {
+    font-weight: 500;
+}
+
+.login-alert {
+    margin-top: 20px;
+}
+
+.login-alert-note {
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+.login-footer {
+    margin-top: 30px;
+    font-size: 14px;
+}
+
+/* Project list cards */
+.project-name {
+    margin: 4px 0 8px;
+}
+
+.project-desc {
+    margin: 0 0 10px;
+}
+
+.project-card-footer {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Project create page */
+.project-create-card {
+    margin-top: 14px;
+}
+
+/* Project members page */
+.members-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.members-header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.members-list-card {
+    margin-bottom: 20px;
+}
+
+.members-section-title {
+    margin-top: 0;
+}
+
+.members-grid {
+    gap: 10px;
+}
+
+.member-card {
+    padding: 10px;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+.member-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.member-info {
+    display: grid;
+    gap: 4px;
+}
+
+.member-role-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Projects members ownership warning block */
+.card-ownership-warning {
+    margin-top: 20px;
+    border-color: rgba(245, 166, 35, 0.3);
+}
+
+.ownership-warning-title {
+    margin-top: 0;
+    color: var(--warning);
+}
+
+.mb-14 {
+    margin-bottom: 14px;
+}
+
+.ml-auto {
+    margin-left: auto;
+}
+
+/* Small utilities for project detail */
+.gap-14 {
+    gap: 14px;
+}
+
+.mb-6 {
+    margin-bottom: 6px;
+}
+
+.project-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+/* TOKENS PAGE CUSTOM STYLES */
+.token-create-card {
+    margin-bottom: 24px;
+}
+
+.token-title {
+    margin-top: 0;
+}
+
+.token-form {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.token-warning {
+    margin-top: 8px;
+}
+
+.token-list-card {
+    margin-top: 18px;
+}
+
+.token-grid {
+    gap: 24px;
+}
+
+.token-card {
+    padding: 12px;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 0;
+}
+
+.token-revoke-form {
+    margin-left: auto;
+    /* align to right in flex row and avoid empty ruleset */
+}
+
+/* Base header helpers */
+.section-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .filter-bar {
     display: flex;
     align-items: center;

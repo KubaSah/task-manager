@@ -2,36 +2,35 @@
 {% block title %}API Explorer{% endblock %}
 {% block section_title %}API Explorer{% endblock %}
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+<div class="api-header">
     <h1>API Explorer</h1>
     <a class="btn" href="{{ url_for('core.tokens_page') }}">Zarządzaj tokenami</a>
 </div>
 
-<div class="card" style="margin-bottom:20px;">
-    <h2 style="margin-top:0;">Dostępne endpointy</h2>
+<div class="card api-endpoints-card">
+    <h2 class="api-section-title">Dostępne endpointy</h2>
     <p class="muted">Wszystkie endpointy wymagają uwierzytelnienia (sesja lub Bearer token w nagłówku Authorization).
     </p>
-    <div class="grid" style="gap:10px; margin-top:14px;">
+    <div class="grid api-grid">
         {% for ep in endpoints %}
-        <div class="card" style="padding:10px; background:transparent; border-color:rgba(255,255,255,0.08);">
-            <div style="display:flex; gap:10px; align-items:center;">
-                <span class="chip" style="min-width:60px; text-align:center;">{{ ep.method }}</span>
-                <code style="flex:1;">{{ ep.path }}</code>
+        <div class="card api-endpoint-card">
+            <div class="api-endpoint-row">
+                <span class="chip api-method-chip">{{ ep.method }}</span>
+                <code class="api-path">{{ ep.path }}</code>
             </div>
-            <div class="muted" style="margin-top:6px; font-size:13px;">{{ ep.desc }}</div>
+            <div class="muted api-endpoint-desc">{{ ep.desc }}</div>
         </div>
         {% endfor %}
     </div>
 </div>
 
 <div class="card">
-    <h2 style="margin-top:0;">Przykładowa odpowiedź: GET /api/tasks</h2>
+    <h2 class="api-section-title">Przykładowa odpowiedź: GET /api/tasks</h2>
     <p class="muted">Poniżej fragment danych z Twoich projektów (max 5 zadań):</p>
-    <pre
-        style="background:#1a1a1a; padding:12px; border-radius:6px; overflow-x:auto; font-size:13px; line-height:1.5;"><code>{{ sample_tasks_json }}</code></pre>
-    <div style="margin-top:12px;">
-        <h3 style="font-size:15px; margin-bottom:6px;">Parametry zapytania (opcjonalne):</h3>
-        <ul class="muted" style="font-size:13px; line-height:1.7;">
+    <pre class="api-code-block"><code>{{ sample_tasks_json }}</code></pre>
+    <div class="api-params-section">
+        <h3 class="api-params-title">Parametry zapytania (opcjonalne):</h3>
+        <ul class="muted api-params-list">
             <li><code>page</code> – numer strony (domyślnie 1)</li>
             <li><code>per_page</code> – zadań na stronę (1-100, domyślnie 20)</li>
             <li><code>q</code> – szukaj w tytule/opisie</li>
@@ -42,16 +41,16 @@
     </div>
 </div>
 
-<div class="card" style="margin-top:20px;">
-    <h2 style="margin-top:0;">Jak używać API?</h2>
-    <ol class="muted" style="font-size:14px; line-height:1.8;">
+<div class="card api-usage-card">
+    <h2 class="api-section-title">Jak używać API?</h2>
+    <ol class="muted api-usage-list">
         <li>Utwórz <a href="{{ url_for('core.tokens_page') }}">token API</a> w zakładce Tokeny.</li>
         <li>Dodaj nagłówek do żądania: <code>Authorization: Bearer &lt;TOKEN&gt;</code></li>
         <li>Wyślij żądanie HTTP do endpointu (np. GET /api/tasks).</li>
         <li>Otrzymasz odpowiedź JSON z danymi lub kodem błędu.</li>
     </ol>
-    <p class="muted" style="margin-top:12px;">Przykład (curl):</p>
-    <pre style="background:#1a1a1a; padding:12px; border-radius:6px; overflow-x:auto; font-size:12px;"><code>curl -H "Authorization: Bearer YOUR_TOKEN" \
+    <p class="muted api-example-note">Przykład (curl):</p>
+    <pre class="api-code-block"><code>curl -H "Authorization: Bearer YOUR_TOKEN" \
   {{ request.url_root }}api/tasks?status=todo&per_page=10</code></pre>
 </div>
 {% endblock %}
