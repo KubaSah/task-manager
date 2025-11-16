@@ -30,9 +30,18 @@ def create_project():
     if form.validate_on_submit():
         # basic sanitization
         description = clean(form.description.data or '', tags=[], strip=True)
-        p = Project(name=form.name.data.strip(), key=form.key.data.strip(), description=description, owner=current_user)
+        p = Project(name=form.name.data.strip(), key=form.key.data.strip().upper(), description=description, owner=current_user)
         db.session.add(p)
-        db.session.flush()
+        try:
+            db.session.flush()
+        except Exception as e:
+            db.session.rollback()
+            # Check for duplicate key
+            if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
+                flash('Klucz projektu już istnieje – wybierz inny', 'danger')
+                return render_template('projects/create.html', form=form)
+            flash('Błąd podczas tworzenia projektu', 'danger')
+            return render_template('projects/create.html', form=form)
         # Add membership as owner
         owner_membership = Membership(user_id=current_user.id, project_id=p.id, role='owner')
         db.session.add(owner_membership)

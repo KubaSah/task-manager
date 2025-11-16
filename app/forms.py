@@ -1,11 +1,18 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SelectField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, Optional, Regexp
 
 
 class ProjectForm(FlaskForm):
     name = StringField('Nazwa', validators=[DataRequired(), Length(max=200)])
-    key = StringField('Klucz', validators=[DataRequired(), Length(max=20)])
+    key = StringField(
+        'Klucz',
+        validators=[
+            DataRequired(),
+            Length(max=20),
+            Regexp(r'^[A-Z0-9_]+$', message='Klucz może zawierać tylko wielkie litery, cyfry i podkreślenia')
+        ]
+    )
     description = TextAreaField('Opis', validators=[Optional(), Length(max=10000)])
 
 

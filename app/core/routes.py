@@ -61,9 +61,21 @@ def audit_page():
         q = q.filter((AuditLog.project_id.in_(pids)) | (AuditLog.actor_id == current_user.id))
     else:
         q = q.filter(AuditLog.actor_id == current_user.id)
-    project_id = request.args.get('project', type=int)
-    if project_id and (project_id in pids):
+    
+    # Pobierz project_id jako int i waliduj
+    project_id_str = request.args.get('project', '').strip()
+    project_id = None
+    if project_id_str:
+        try:
+            project_id = int(project_id_str)
+            if project_id not in pids:
+                project_id = None  # Ignoruj nieprawidłowy/niedostępny projekt
+        except (ValueError, TypeError):
+            project_id = None
+    
+    if project_id:
         q = q.filter(AuditLog.project_id == project_id)
+    
     page = max(1, int(request.args.get('page', 1)))
     per_page = 50
     logs = q.order_by(AuditLog.created_at.desc()).offset((page-1)*per_page).limit(per_page).all()
@@ -71,7 +83,7 @@ def audit_page():
     pages = (total + per_page - 1) // per_page if total else 1
     # Dla filtra projektów przygotuj listę
     projects = Project.query.filter(Project.id.in_(pids)).all() if pids else []
-    return render_template('core/audit.html', logs=logs, projects=projects, page=page, pages=pages, total=total)
+    return render_template('core/audit.html', logs=logs, projects=projects, page=page, pages=pages, total=total, selected_project=project_id)
 
 
 @bp.get('/api-explorer')
@@ -118,9 +130,21 @@ def audit_export():
         q = q.filter((AuditLog.project_id.in_(pids)) | (AuditLog.actor_id == current_user.id))
     else:
         q = q.filter(AuditLog.actor_id == current_user.id)
-    project_id = request.args.get('project', type=int)
-    if project_id and (project_id in pids):
+    
+    # Walidacja project_id tak samo jak w audit_page
+    project_id_str = request.args.get('project', '').strip()
+    project_id = None
+    if project_id_str:
+        try:
+            project_id = int(project_id_str)
+            if project_id not in pids:
+                project_id = None
+        except (ValueError, TypeError):
+            project_id = None
+    
+    if project_id:
         q = q.filter(AuditLog.project_id == project_id)
+    
     logs = q.order_by(AuditLog.created_at.desc()).limit(5000).all()
     def generate():
         yield 'id,created_at,action,entity_type,entity_id,project_id,actor_id,meta\n'

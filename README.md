@@ -55,6 +55,64 @@ Pozostałe (A04, A06, A08, A10) nie są głównym celem implementacyjnym, ale: m
 - Dokumentacja modelu zagrożeń (Threat Model) i diagram architektury – do uzupełnienia w README.
 - Produkcja: upewnić się, że `OAUTH_REDIRECT_BASE` ustawione na HTTPS domeny, a dostawcy OAuth mają poprawne redirect URIs.
 
+## Threat Model (Model Zagrożeń)
+
+### Aktorzy i Cele
+- **Użytkownik zwykły (Authenticated User)**: Chce zarządzać swoimi projektami i zadaniami, ale nie powinien mieć dostępu do danych innych użytkowników.
+- **Administrator projektu (Project Owner/Admin)**: Zarządza projektem, dodaje/usuwa członków, może usuwać zadania. Potrzebuje pełnej kontroli nad swoim projektem.
+- **Atakujący zewnętrzny (Unauthenticated Attacker)**: Próbuje uzyskać nieautoryzowany dostęp, przeprowadzić XSS, SQL Injection, CSRF, ujawnić dane użytkowników.
+- **Atakujący z konta (Compromised User)**: Posiada konto, ale próbuje eskalować uprawnienia lub uzyskać dostęp do cudzych projektów (IDOR).
+
+### Aktywa do Ochrony
+- **Dane użytkowników**: Email, nazwa, avatar (pochodzą z OAuth, nie przechowujemy haseł).
+- **Projekty i zadania**: Tytuły, opisy, komentarze – prywatne dla członków projektu.
+- **Sesje i tokeny**: Ciasteczka sesji HTTP, tokeny API (SHA-256 hash w DB).
+- **Integralność systemu**: Kontrola dostępu, poprawność danych, dostępność.
+
+### Główne Zagrożenia i Mechanizmy Obrony
+
+| Zagrożenie | Wektor ataku | Mechanizm ochrony |
+|------------|--------------|-------------------|
+| **A01 IDOR** | Atakujący z konta próbuje GET /tasks/{id} lub /api/tasks?project_id=X dla cudzego projektu | `require_project_membership()` w każdym route; membership sprawdzane przed zwróceniem danych; testy `test_access_control.py` |
+| **A02 Dane w tranzycie** | MITM przechwytuje sesje lub tokeny przez HTTP | Talisman force_https w prod, HSTS, SESSION_COOKIE_SECURE=True, SameSite=Lax |
+| **A03 XSS** | Wstrzykiwanie `<script>` w opisy/komentarze/nazwy projektów | Jinja autoescape; bleach.clean() w forms (opis/komentarz); usunięte `|safe`; CSP (częściowo, plan: nonces); testy `test_injection.py` |
+| **A03 SQL Injection** | Parametr `?q=<payload>` lub POST z SQLi | SQLAlchemy ORM parametryzuje zapytania; testy `test_injection.py` weryfikują brak crashu |
+| **A05 CSRF** | Atakujący zewnętrzny próbuje POST z cudzej strony | Flask-WTF CSRFProtect; tokeny w formularzach; AJAX wymaga X-CSRF-Token; SameSite=Lax; testy `test_csrf.py` |
+| **A05 Clickjacking** | Embedding w iframe na złośliwej stronie | X-Frame-Options: DENY (Talisman); CSP frame-ancestors 'none' |
+| **A05 Content sniffing** | Przeglądarka interpretuje JSON jako HTML i wykonuje skrypty | X-Content-Type-Options: nosniff (Talisman) |
+| **A06 Podatne zależności** | Stare wersje bibliotek z CVE | pip-audit + bandit w CI (GitHub Actions); requirements.txt z konkretnymi wersjami |
+| **A07 Brute-force login** | Wielokrotne próby logowania | Rate limiting (Flask-Limiter) na `/auth/login/*` i `/auth/callback/*`; OAuth wymaga state (CSRF token) |
+| **A07 Session hijacking** | Przechwycenie ciasteczka sesji | HttpOnly, Secure, SameSite=Lax; 8h TTL (automatyczne wygaśnięcie); brak localStorage |
+| **A09 Brak audytu** | Działania użytkowników nieśledzane | `AuditLog` dla kluczowych akcji (status, assignee, delete); X-Request-ID w nagłówkach; testy `test_audit.py` |
+
+### Założenia i Ograniczenia
+- **Zaufany OAuth provider**: Zakładamy, że Google/GitHub nie są skompromitowane; weryfikujemy state/nonce, ale nie kontrolujemy bezpieczeństwa po stronie OAuth.
+- **HTTPS w produkcji**: Wymuszamy HSTS i Secure cookies; jeśli deploy nie ma HTTPS (błąd konfiguracji), ochrona sesji spada.
+- **SQLite w testach**: Nie testujemy pełnej izolacji Postgres, ale ORM działa tak samo; produkcja = Postgres.
+- **Brak zaawansowanego SIEM**: Logi aplikacji trafiają do pliku (dev) lub stdout (Heroku); nie ma realtime alertów (można dodać np. Sentry).
+- **CSP 'unsafe-inline'**: Aktualnie dopuszczamy inline JS/CSS dla prostoty; plan: migracja na nonces przed wdrożeniem produkcyjnym krytycznych funkcji.
+
+### Diagram architektury (uproszczony)
+```
+[Użytkownik] --(HTTPS)--> [Reverse Proxy/Heroku] --(ProxyFix)--> [Flask App (Talisman)]
+                                                                      |
+                                                      +---------------+---------------+
+                                                      |               |               |
+                                                 [Blueprints]  [SQLAlchemy ORM]  [Authlib OAuth]
+                                                      |               |               |
+                                                   [Routes]      [PostgreSQL]     [Google/GitHub]
+                                                      |
+                                              [CSRFProtect, Limiter]
+```
+
+- **Reverse Proxy**: Heroku router; ProxyFix odczytuje X-Forwarded-Proto/For do poprawnego generowania URL.
+- **Talisman**: Stosuje nagłówki bezpieczeństwa (CSP, HSTS, XFO, nosniff, Referrer-Policy, Permissions-Policy).
+- **Flask-Limiter**: Throttling per-IP na login/API.
+- **CSRFProtect**: Weryfikuje tokeny w POST/PATCH/DELETE.
+- **Authlib**: Obsługuje flow OAuth2 (authorize, callback, token, userinfo).
+
+---
+
 Szczegóły zostaną rozszerzone po implementacji kolejnych modułów.
 
 ## Reset bazy danych (SQLite)

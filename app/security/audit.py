@@ -6,6 +6,19 @@ from ..models import AuditLog
 import json
 
 def log_action(action: str, entity_type: str, entity_id: Optional[int] = None, project_id: Optional[int] = None, meta: Optional[dict[str, Any]] = None):
+    """
+    Zapisuje akcję w logu audytu.
+    
+    Args:
+        action: Nazwa akcji (np. 'task.status', 'project.create')
+        entity_type: Typ encji ('task', 'project', 'comment', itp.)
+        entity_id: ID encji (opcjonalne)
+        project_id: ID projektu, którego dotyczy akcja (opcjonalne)
+        meta: Dodatkowe metadane JSON (opcjonalne)
+    
+    Note:
+        Nie commituje transakcji – wywołujący musi wykonać db.session.commit()
+    """
     try:
         actor_id = current_user.id if getattr(current_user, 'is_authenticated', False) else None
     except Exception:

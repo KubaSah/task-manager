@@ -43,7 +43,14 @@ def create_app():
         force_https=app.config.get('SESSION_COOKIE_SECURE', False),
         session_cookie_http_only=True,
         frame_options='DENY',
-        permissions_policy={"geolocation": "()"},
+        permissions_policy={
+            "geolocation": "()",
+            "camera": "()",
+            "microphone": "()",
+            "payment": "()",
+            "usb": "()",
+            "interest-cohort": "()",
+        },
         referrer_policy='strict-origin-when-cross-origin',
     )
 
