@@ -50,10 +50,27 @@ Pozostałe (A04, A06, A08, A10) nie są głównym celem implementacyjnym, ale: m
 - CI: testy + skan zależności (pip-audit) + analiza statyczna (bandit) na każdym PR.
 
 ### Braki i plan
-- CSP bez `unsafe-inline` z nonce – do wdrożenia (wymaga wstrzykiwania nonce w szablonach i konfiguracji Talisman).
+- CSP z nonce – zaimplementowane (per-request nonce, brak `unsafe-inline`); szablony zaktualizowane.
 - Dodatkowe testy A01 (np. próba filtrowania po cudzym `project_id` w API powinna zwrócić puste/403) – częściowo dodane, można rozszerzyć.
 - Dokumentacja modelu zagrożeń (Threat Model) i diagram architektury – do uzupełnienia w README.
 - Produkcja: upewnić się, że `OAUTH_REDIRECT_BASE` ustawione na HTTPS domeny, a dostawcy OAuth mają poprawne redirect URIs.
+
+## Wyszukiwarka globalna
+
+- Pasek wyszukiwania w topbar prowadzi do `/search` i przeszukuje projekty oraz zadania, do których użytkownik ma dostęp.
+- Obsługiwane jest proste wyszukiwanie tekstowe w: nazwie/kluczu/opisie projektu oraz tytule/opisie zadania (ILIKE).
+- Wyniki są ograniczane do projektów, w których użytkownik jest członkiem; brak wycieków danych między projektami.
+
+## Czego brakuje do pełnego zakresu projektu
+
+- Zrzuty ekranu (README): ekran logowania, lista zadań z filtrami, log audytu.
+- Testy E2E/UI (np. Playwright) dla krytycznych ścieżek: logowanie, tworzenie projektu/zadania, filtrowanie, wyszukiwanie.
+- Notyfikacje email/web (np. o przypisaniu/zmianie statusu) – poza zakresem MVP, do rozważenia.
+- Mechanizm zapraszania użytkowników do projektu (email z tokenem) – aktualnie dodawanie po adresie.
+- Dostępność (a11y): przegląd kontrastów i focus states, etykiety ARIA.
+- Monitoring błędów (np. Sentry) i metryki (np. Prometheus/Grafana lub usługowe odpowiedniki).
+- Kopie zapasowe i polityka retencji (szczególnie dla Postgres w produkcji).
+- Polityka prywatności i regulamin (dla publicznego wdrożenia), ewentualnie baner cookies jeśli wymogą to analityki.
 
 ## Threat Model (Model Zagrożeń)
 

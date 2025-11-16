@@ -5,16 +5,17 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     white-space: nowrap;
-    padding: 4px 0
+    padding: 6px 0
 }
 
-.filter-input,
-.filter-select {
-    width: auto;
-    flex: 0 0 auto
+.filter-bar .filter-input,
+.filter-bar .filter-select {
+    width: auto !important;
+    flex: 0 0 auto !important;
+    display: inline-flex
 }
 
-.filter-select {
+.filter-bar .filter-select {
     min-width: 110px
 }
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, Response
 from flask_login import login_required, current_user
-from ..models import ApiToken, AuditLog, Project, Membership
+from ..models import ApiToken, AuditLog, Project, Membership, Task
 from .. import db
 from hashlib import sha256
 import secrets
@@ -118,6 +118,39 @@ def api_explorer():
         {'method': 'DELETE', 'path': '/api/tokens/<id>', 'desc': 'Unieważnij token'},
     ]
     return render_template('core/api_explorer.html', endpoints=endpoints, sample_tasks_json=tasks_json)
+
+
+@bp.get('/search')
+@login_required
+def search():
+    """Prosta wyszukiwarka globalna po projektach i zadaniach dostępnych użytkownikowi."""
+    qtext = (request.args.get('q') or '').strip()
+    # Zbierz projekty, do których użytkownik ma dostęp
+    memberships = Membership.query.filter_by(user_id=current_user.id).all()
+    pids = [m.project_id for m in memberships]
+
+    projects = []
+    tasks = []
+    if qtext and pids:
+        like = f"%{qtext}%"
+        projects = (
+            Project.query
+            .filter(Project.id.in_(pids))
+            .filter((Project.name.ilike(like)) | (Project.key.ilike(like)) | (Project.description.ilike(like)))
+            .order_by(Project.created_at.desc())
+            .limit(20)
+            .all()
+        )
+        tasks = (
+            Task.query
+            .filter(Task.project_id.in_(pids))
+            .filter((Task.title.ilike(like)) | (Task.description.ilike(like)))
+            .order_by(Task.created_at.desc())
+            .limit(50)
+            .all()
+        )
+
+    return render_template('core/search.html', q=qtext, projects=projects, tasks=tasks)
 
 
 @bp.get('/audit/export')

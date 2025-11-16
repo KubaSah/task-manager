@@ -41,8 +41,8 @@
                     <strong>{% block section_title %}{% endblock %}</strong>
                 </div>
                 <div class="search">
-                    <form action="#" method="get" onsubmit="return false">
-                        <input type="text" placeholder="Szukaj… (wkrótce)" aria-label="Szukaj">
+                    <form action="{{ url_for('core.search') }}" method="get">
+                        <input type="text" name="q" placeholder="Szukaj…" aria-label="Szukaj">
                     </form>
                 </div>
                 <div class="user">
