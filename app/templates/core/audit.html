@@ -44,9 +44,12 @@
             href="{{ url_for('core.audit_page', page=page-1, project=selected_project if selected_project else '') }}">Poprzednia</a>{%
         endif %}
         {% if page < pages %}<a class="btn"
-            href="{{ url_for('core.audit_page', page=page+1, project=selected_project if selected_project else '') }}">Następna</a>{%
+            href="{{ url_for('core.audit_page', page=page+1, project=selected_project if selected_project else '') }}">
+            Następna</a>{%
             endif %}
-            <a class="btn" href="{{ url_for('core.audit_export', project=selected_project if selected_project else '') }}">Export CSV</a>
+            <a class="btn"
+                href="{{ url_for('core.audit_export', project=selected_project if selected_project else '') }}">Export
+                CSV</a>
     </div>
 </div>
 {% endblock %}
