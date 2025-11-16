@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, PasswordField
-from wtforms.validators import DataRequired, Length, Optional, Email, EqualTo
+from wtforms import StringField, TextAreaField, SelectField
+from wtforms.validators import DataRequired, Length, Optional
 
 
 class ProjectForm(FlaskForm):
@@ -20,15 +20,3 @@ class TaskForm(FlaskForm):
 
 class CommentForm(FlaskForm):
     content = TextAreaField('Komentarz', validators=[DataRequired(), Length(max=10000)])
-
-
-class RegistrationForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email(), Length(max=255)])
-    name = StringField('Nazwa użytkownika', validators=[DataRequired(), Length(max=120)])
-    password = PasswordField('Hasło', validators=[DataRequired(), Length(min=8, max=128)])
-    confirm = PasswordField('Powtórz hasło', validators=[DataRequired(), EqualTo('password', message='Hasła muszą być identyczne')])
-
-
-class LoginForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email(), Length(max=255)])
-    password = PasswordField('Hasło', validators=[DataRequired(), Length(min=8, max=128)])

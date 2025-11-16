@@ -53,8 +53,6 @@
                     <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Wyloguj</a>
                     {% else %}
                     <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Zaloguj</a>
-                    <a class="btn btn-ghost" href="{{ url_for('auth.oauth_login', provider='google') }}">Google</a>
-                    <a class="btn btn-ghost" href="{{ url_for('auth.oauth_login', provider='github') }}">GitHub</a>
                     {% endif %}
                 </div>
             </header>

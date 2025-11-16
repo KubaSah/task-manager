@@ -12,6 +12,8 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
 from config import get_config
+from hashlib import sha256
+from datetime import datetime, timezone
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Extensions
@@ -49,13 +51,40 @@ def create_app():
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
     login_manager.login_view = 'auth.login'
-    from .models import User  # imported after app & db setup
+    from .models import User, ApiToken  # imported after app & db setup
 
     @login_manager.user_loader
     def load_user(user_id: str):
         if not user_id.isdigit():
             return None
         return User.query.get(int(user_id))
+
+    @login_manager.request_loader
+    def load_user_from_request(req):
+        """Stateless bearer token auth for API requests.
+        Looks for Authorization: Bearer <token> and returns the associated user without creating a session.
+        """
+        auth = req.headers.get('Authorization', '')
+        if not auth.startswith('Bearer '):
+            return None
+        token = auth.split(' ', 1)[1].strip()
+        if not token:
+            return None
+        th = sha256(token.encode('utf-8')).hexdigest()
+        # Force session to reload from DB (fresh state for revoked tokens)
+        db.session.expire_all()
+        tok = db.session.execute(
+            db.select(ApiToken).filter_by(token_hash=th, revoked=False)
+        ).scalar_one_or_none()
+        if not tok:
+            return None
+        user = User.query.get(tok.user_id)
+        if not user:
+            return None
+        # Update last_used_at (timezone aware)
+        tok.last_used_at = datetime.now(timezone.utc)
+        db.session.commit()
+        return user
 
     # Blueprints registration
     from .auth.routes import bp as auth_bp

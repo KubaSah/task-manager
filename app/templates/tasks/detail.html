@@ -54,7 +54,7 @@
             {% for c in task.comments %}
             <div class="card" style="padding:10px; background: transparent; border-color: rgba(255,255,255,0.06);">
                 <div class="meta" style="margin-bottom:4px">{{ c.author.name if c.author else 'anon' }}</div>
-                <div>{{ c.content|safe }}</div>
+                <div>{{ c.content }}</div>
                 <form method="post" action="{{ url_for('tasks.delete_comment', task_id=task.id, comment_id=c.id) }}"
                     style="margin-top:6px;" onsubmit="return confirm('Usunąć komentarz?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

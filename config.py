@@ -89,6 +89,7 @@ class DevelopmentConfig(BaseConfig):
 class TestingConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_ENGINE_OPTIONS = {}  # SQLite doesn't use pool_size/max_overflow
     WTF_CSRF_ENABLED = False  # allow easier test posting; test CSRF separately
 
 class ProductionConfig(BaseConfig):

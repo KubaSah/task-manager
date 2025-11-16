@@ -144,3 +144,47 @@ def remove_member(project_id: int, membership_id: int):
     db.session.commit()
     flash('Usunięto członka projektu', 'info')
     return redirect(url_for('projects.project_members', project_id=project_id))
+
+
+@bp.post('/<int:project_id>/transfer-owner')
+@login_required
+def transfer_ownership(project_id: int):
+    """Transfer project ownership to another member. Only current owner can do this."""
+    role = require_project_membership(project_id, roles=('owner',))
+    p = Project.query.get_or_404(project_id)
+    
+    # Get new owner user ID
+    new_owner_id = request.form.get('new_owner_id', type=int)
+    if not new_owner_id:
+        flash('Nie podano nowego właściciela', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    
+    # Prevent transferring to self
+    if new_owner_id == current_user.id:
+        flash('Już jesteś właścicielem tego projektu', 'info')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    
+    # Verify new owner is a project member
+    new_owner_membership = Membership.query.filter_by(project_id=project_id, user_id=new_owner_id).first()
+    if not new_owner_membership:
+        flash('Nowy właściciel musi być członkiem projektu', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    
+    # Get current owner membership
+    current_owner_membership = Membership.query.filter_by(project_id=project_id, user_id=current_user.id, role='owner').first()
+    if not current_owner_membership:
+        flash('Błąd: nie znaleziono membership właściciela', 'danger')
+        return redirect(url_for('projects.project_members', project_id=project_id))
+    
+    # Perform transfer: demote current owner to admin, promote new owner
+    current_owner_membership.role = 'admin'
+    new_owner_membership.role = 'owner'
+    p.owner_id = new_owner_id
+    
+    db.session.commit()
+    log_action('project.transfer_ownership', 'project', project_id, project_id, 
+               meta={'old_owner_id': current_user.id, 'new_owner_id': new_owner_id})
+    db.session.commit()
+    
+    flash(f'Przekazano własność projektu użytkownikowi {new_owner_membership.user.name}', 'success')
+    return redirect(url_for('projects.project_members', project_id=project_id))

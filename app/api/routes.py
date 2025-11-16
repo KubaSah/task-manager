@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, abort
-from flask_login import login_required, current_user, login_user
+from flask_login import login_required, current_user
 from bleach import clean
 from math import ceil
 
@@ -9,7 +9,6 @@ from ..security.permissions import require_project_membership
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
 from hashlib import sha256
-from datetime import datetime
 
 bp = Blueprint('api', __name__)
 
@@ -19,28 +18,7 @@ def health():
     return jsonify(status='ok')
 
 
-@bp.before_request
-def bearer_token_auth():
-    # If already authenticated via session, skip
-    if getattr(current_user, 'is_authenticated', False):
-        return
-    auth = request.headers.get('Authorization', '')
-    if not auth.startswith('Bearer '):
-        return
-    token = auth.removeprefix('Bearer ').strip()
-    if not token:
-        return
-    th = sha256(token.encode('utf-8')).hexdigest()
-    tok: ApiToken | None = ApiToken.query.filter_by(token_hash=th, revoked=False).first()
-    if not tok:
-        return
-    user: User | None = User.query.get(tok.user_id)
-    if not user:
-        return
-    # Log the user for this request context
-    login_user(user, remember=False, force=True)
-    tok.last_used_at = datetime.utcnow()
-    db.session.commit()
+# Bearer token auth moved to a request_loader in app factory to keep it stateless
 
 
 def _paginate_query(query, page: int, per_page: int):
@@ -181,7 +159,7 @@ def get_task(task_id: int):
         'status': t.status,
         'priority': t.priority,
         'assignee_id': t.assignee_id,
-        'created_by_id': t.created_by_id,
+        'creator_id': t.creator_id,
         'created_at': t.created_at.isoformat() if t.created_at else None,
     })
 

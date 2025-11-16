@@ -172,7 +172,7 @@ def update_assignee(task_id: int):
 def delete_task(task_id: int):
     t = Task.query.get_or_404(task_id)
     role = require_project_membership(t.project_id)
-    if role not in ('owner','admin') and t.created_by_id != current_user.id:
+    if role not in ('owner','admin') and t.creator_id != current_user.id:
         flash('Brak uprawnień do usunięcia zadania', 'danger')
         return redirect(url_for('tasks.task_detail', task_id=task_id))
     db.session.delete(t)

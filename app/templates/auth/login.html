@@ -1,41 +1,67 @@
 {% extends 'base.html' %}
 {% block title %}Logowanie{% endblock %}
-{% block section_title %}Logowanie{% endblock %}
+{% block section_title %}Witaj w systemie zarządzania zadaniami{% endblock %}
 {% block content %}
-<div class="grid" style="gap:14px;">
-    <div class="card">
-        <h2>Wejdź przez email i hasło</h2>
-        <form method="post">
-            {{ form.csrf_token if form else '' }}
-            <div class="field">
-                <label>{{ form.email.label if form else 'Email' }}</label>
-                {{ form.email(size=40) if form else '' }}
-            </div>
-            <div class="field">
-                <label>{{ form.password.label if form else 'Hasło' }}</label>
-                {{ form.password(size=40) if form else '' }}
-            </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-                <button class="btn btn-primary" type="submit">Zaloguj</button>
-                <a class="btn" href="{{ url_for('auth.register') }}">Utwórz konto</a>
-            </div>
-            {% if form %}
-            {% for field, errors in form.errors.items() %}
-            {% for error in errors %}
-            <div class="alert alert-danger" style="margin-top:10px">{{ field }}: {{ error }}</div>
-            {% endfor %}
-            {% endfor %}
-            {% endif %}
-        </form>
-    </div>
+<div style="max-width: 500px; margin: 60px auto; text-align: center;">
+    <div class="card" style="padding: 40px;">
+        <h2 style="margin-bottom: 30px;">Zaloguj się, aby kontynuować</h2>
 
-    <div class="card">
-        <h2>Single Sign-On</h2>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <a class="btn" href="{{ url_for('auth.oauth_login', provider='google') }}">Zaloguj przez Google</a>
-            <a class="btn" href="{{ url_for('auth.oauth_login', provider='github') }}">Zaloguj przez GitHub</a>
+        {% if google_enabled or github_enabled %}
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+            {% if google_enabled %}
+            <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="btn btn-primary"
+                style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 24px; font-size: 16px; border-radius: 8px; background: #4285F4; color: white; text-decoration: none; border: none; transition: background 0.2s;">
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+                        fill="#FFC107" />
+                    <path
+                        d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+                        fill="#FF3D00" />
+                    <path
+                        d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+                        fill="#4CAF50" />
+                    <path
+                        d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+                        fill="#1976D2" />
+                </svg>
+                <span style="font-weight: 500;">Kontynuuj z Google</span>
+            </a>
+            {% endif %}
+
+            {% if github_enabled %}
+            <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="btn"
+                style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 24px; font-size: 16px; border-radius: 8px; background: #24292e; color: white; text-decoration: none; border: none; transition: background 0.2s;">
+                <svg width="20" height="20" viewBox="0 0 98 96" fill="white" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" />
+                </svg>
+                <span style="font-weight: 500;">Kontynuuj z GitHub</span>
+            </a>
+            {% endif %}
         </div>
-        <p class="muted" style="margin-top:8px">SSO wymaga skonfigurowania kluczy OAuth w zmiennych środowiskowych.</p>
+        {% else %}
+        <div class="alert alert-warning" style="margin-top: 20px;">
+            <p>OAuth nie jest skonfigurowany.</p>
+            <p class="muted" style="font-size: 14px; margin-top: 8px;">
+                Skonfiguruj OAUTH_GOOGLE_CLIENT_ID/SECRET lub OAUTH_GITHUB_CLIENT_ID/SECRET w zmiennych środowiskowych.
+            </p>
+        </div>
+        {% endif %}
+
+        <p class="muted" style="margin-top: 30px; font-size: 14px;">
+            Bezpieczne logowanie przez zaufanych providerów
+        </p>
     </div>
 </div>
+
+<style>
+    .btn-primary:hover {
+        background: #357ae8 !important;
+    }
+
+    .btn:hover {
+        background: #1a1e22 !important;
+    }
+</style>
 {% endblock %}

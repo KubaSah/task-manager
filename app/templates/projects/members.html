@@ -67,4 +67,30 @@
     </form>
 </div>
 {% endif %}
+
+{% if role == 'owner' %}
+<div class="card" style="margin-top:20px; border-color: rgba(245, 166, 35, 0.3);">
+    <h2 style="margin-top:0; color: var(--warning);">⚠️ Transfer własności projektu</h2>
+    <p class="muted" style="margin-bottom:14px;">
+        Przekazanie własności projektu spowoduje zmianę Twojej roli na <strong>admin</strong>,
+        a wybrany użytkownik stanie się nowym właścicielem z pełną kontrolą nad projektem.
+    </p>
+    <form method="post" action="{{ url_for('projects.transfer_ownership', project_id=project.id) }}"
+        onsubmit="return confirm('Czy na pewno chcesz przekazać własność tego projektu? Tej operacji nie można cofnąć.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="field">
+            <label>Wybierz nowego właściciela</label>
+            <select name="new_owner_id" required>
+                <option value="">-- Wybierz użytkownika --</option>
+                {% for m in memberships %}
+                {% if m.role != 'owner' %}
+                <option value="{{ m.user.id }}">{{ m.user.name }} ({{ m.user.email }}) - {{ m.role }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-danger" type="submit">Przekaż własność</button>
+    </form>
+</div>
+{% endif %}
 {% endblock %}

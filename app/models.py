@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from flask_login import UserMixin
@@ -10,7 +10,7 @@ from . import db
 
 
 def now_utc():
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 # Association table for global user roles (e.g., 'admin')
@@ -134,14 +134,14 @@ class Task(db.Model):
     priority = db.Column(db.String(10), nullable=False, default='medium')  # 'low'|'medium'|'high'
 
     assignee_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
-    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
 
     created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
     updated_at = db.Column(db.DateTime, default=now_utc, onupdate=now_utc, nullable=False)
 
     project = db.relationship('Project', back_populates='tasks')
     assignee = db.relationship('User', foreign_keys=[assignee_id])
-    created_by = db.relationship('User', foreign_keys=[created_by_id])
+    created_by = db.relationship('User', foreign_keys=[creator_id])
     comments = db.relationship('Comment', back_populates='task', cascade='all, delete-orphan')
 
     __table_args__ = (

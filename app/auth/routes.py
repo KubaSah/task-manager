@@ -7,7 +7,7 @@ from flask_login import login_user, logout_user, current_user
 from authlib.integrations.flask_client import OAuth
 from .. import db, limiter
 from ..models import User, Role, UserIdentity
-from ..forms import LoginForm, RegistrationForm
+from ..security.audit import log_action
 from .decorators import role_required
 
 oauth = OAuth()
@@ -49,36 +49,17 @@ def init_oauth_clients():
 @bp.route('/login', methods=['GET'])
 @limiter.limit("10 per minute")
 def login():
-    # SSO-only: redirect bezpośrednio do Google OAuth
+    """OAuth-only login page with provider selection."""
     if current_user.is_authenticated:
         return redirect(url_for('core.index'))
-    return redirect(url_for('auth.oauth_login', provider='google'))
-
-@bp.route('/register', methods=['GET', 'POST'])
-@limiter.limit("10 per minute")
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('core.index'))
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        email = form.email.data.lower().strip()
-        existing = User.query.filter_by(email=email).first()
-        if existing:
-            flash('Użytkownik z takim emailem już istnieje', 'danger')
-        else:
-            user = User(email=email, name=form.name.data.strip(), provider='local', provider_id=email)
-            user.set_password(form.password.data)
-            # Ensure default role exists
-            role = Role.query.filter_by(name='user').first()
-            if not role:
-                role = Role(name='user', description='Standard user')
-                db.session.add(role)
-            user.roles.append(role)
-            db.session.add(user)
-            db.session.commit()
-            flash('Konto utworzone. Możesz się zalogować.', 'success')
-            return redirect(url_for('auth.login'))
-    return render_template('auth/register.html', form=form)
+    
+    # Check if OAuth providers are configured
+    google_enabled = bool(current_app.config.get('OAUTH_GOOGLE_CLIENT_ID'))
+    github_enabled = bool(current_app.config.get('OAUTH_GITHUB_CLIENT_ID'))
+    
+    return render_template('auth/login.html', 
+                          google_enabled=google_enabled,
+                          github_enabled=github_enabled)
 
 
 def _build_redirect_uri(provider: str) -> str:
