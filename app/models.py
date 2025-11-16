@@ -41,6 +41,11 @@ class User(UserMixin, db.Model):
     provider_id = db.Column(db.String(255), nullable=False)
     # Local auth (optional): store hashed password when provider=='local'
     password_hash = db.Column(db.String(255))
+    
+    # Legacy columns from password login (kept for DB compatibility, not used in OAuth-only flow)
+    failed_login_attempts = db.Column(db.Integer, default=0, nullable=False, server_default='0')
+    account_locked_until = db.Column(db.DateTime)
+    last_failed_login = db.Column(db.DateTime)
 
     created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
     updated_at = db.Column(db.DateTime, default=now_utc, onupdate=now_utc, nullable=False)
