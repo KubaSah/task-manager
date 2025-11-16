@@ -8,25 +8,29 @@
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
         <form method="get" action="{{ url_for('tasks.list_tasks') }}" id="filter-form" class="filter-bar">
             <input type="search" name="q" placeholder="Szukaj…" value="{{ request.args.get('q','') }}"
-                class="filter-input" style="max-width:140px;" />
-            <select name="status" class="filter-select" style="max-width:110px;" onchange="this.form.submit()">
-                <option value="">Status (wszystkie)</option>
+                class="filter-input" style="max-width:180px;" />
+            <select name="status" class="filter-select" style="max-width:140px;">
+                {% if not request.args.get('status') %}
+                <option value="" selected disabled>Status</option>
+                {% endif %}
                 <option value="todo" {% if request.args.get('status')=='todo' %}selected{% endif %}>TODO</option>
-                <option value="in_progress" {% if request.args.get('status')=='in_progress' %}selected{% endif %}>
-                    W trakcie</option>
-                <option value="done" {% if request.args.get('status')=='done' %}selected{% endif %}>Zrobione
-                </option>
+                <option value="in_progress" {% if request.args.get('status')=='in_progress' %}selected{% endif %}>W
+                    trakcie</option>
+                <option value="done" {% if request.args.get('status')=='done' %}selected{% endif %}>Zrobione</option>
             </select>
-            <select name="priority" class="filter-select" style="max-width:100px;" onchange="this.form.submit()">
-                <option value="">Priorytet (wszystkie)</option>
+            <select name="priority" class="filter-select" style="max-width:130px;">
+                {% if not request.args.get('priority') %}
+                <option value="" selected disabled>Priorytet</option>
+                {% endif %}
                 <option value="low" {% if request.args.get('priority')=='low' %}selected{% endif %}>Niski</option>
                 <option value="medium" {% if request.args.get('priority')=='medium' %}selected{% endif %}>Średni
                 </option>
-                <option value="high" {% if request.args.get('priority')=='high' %}selected{% endif %}>Wysoki
-                </option>
+                <option value="high" {% if request.args.get('priority')=='high' %}selected{% endif %}>Wysoki</option>
             </select>
-            <select name="project" class="filter-select" style="max-width:130px;" onchange="this.form.submit()">
-                <option value="">Projekt</option>
+            <select name="project" class="filter-select" style="max-width:150px;">
+                {% if not selected_project %}
+                <option value="" selected disabled>Projekt</option>
+                {% endif %}
                 {% for p in projects %}
                 <option value="{{ p.id }}" {% if selected_project==p.id %}selected{% endif %}>{{ p.key }}</option>
                 {% endfor %}
@@ -66,6 +70,31 @@
 {% block scripts %}
 <script nonce="{{ g.csp_nonce }}">
     (function () {
+        // Auto-submit filters without inline handlers (CSP friendly)
+        const form = document.getElementById('filter-form');
+        if (form) {
+            const submitNow = () => form.requestSubmit ? form.requestSubmit() : form.submit();
+            // Change on selects triggers submit
+            form.querySelectorAll('select.filter-select').forEach(sel => {
+                sel.addEventListener('change', submitNow);
+            });
+            // Debounced typing in search
+            const q = form.querySelector('input[name="q"]');
+            let t;
+            if (q) {
+                q.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitNow();
+                    }
+                });
+                q.addEventListener('input', () => {
+                    clearTimeout(t);
+                    t = setTimeout(submitNow, 400);
+                });
+            }
+        }
+
         const getToken = () => document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const board = document.querySelector('.board');
         if (!board) return;

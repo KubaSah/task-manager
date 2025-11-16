@@ -1,10 +1,8 @@
 .filter-bar {
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    white-space: nowrap;
+    gap: 8px 10px;
+    flex-wrap: wrap;
     padding: 6px 0
 }
 
@@ -17,6 +15,20 @@
 
 .filter-bar .filter-select {
     min-width: 110px
+}
+
+/* Na małych ekranach układaj filtry pionowo (100% szerokości) */
+@media (max-width: 640px) {
+    .filter-bar {
+        gap: 8px 0;
+    }
+
+    .filter-bar .filter-input,
+    .filter-bar .filter-select {
+        width: 100% !important;
+        display: block;
+        flex: 1 0 100% !important;
+    }
 }
 
 *,
