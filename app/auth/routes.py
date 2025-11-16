@@ -87,56 +87,94 @@ def oauth_login(provider: str):
 @limiter.limit("5 per minute")
 def oauth_callback(provider: str):
     if provider not in ('google', 'github'):
+        current_app.logger.error(f"Invalid OAuth provider: {provider}")
         abort(404)
-    client = oauth.create_client(provider)
-    if not client:
-        abort(503)
-    sent_state = request.args.get('state')
-    if not sent_state or sent_state != session.get('oauth_state'):
-        abort(403)
-    token = client.authorize_access_token()
-    if provider == 'google':
-        # With OIDC discovery, Authlib knows the userinfo endpoint
-        userinfo = client.userinfo()
-        email = userinfo.get('email')
-        name = userinfo.get('name') or email
-        avatar = userinfo.get('picture')
-        provider_id = userinfo.get('sub')
-    else:  # github
-        userinfo = client.get('user').json()
-        emails_resp = client.get('user/emails').json()
-        primary_email = next((e['email'] for e in emails_resp if e.get('primary')), None)
-        email = primary_email or userinfo.get('email') or f"{userinfo.get('login')}@users.noreply.github.com"
-        name = userinfo.get('name') or userinfo.get('login')
-        avatar = userinfo.get('avatar_url')
-        provider_id = str(userinfo.get('id'))
+    
+    try:
+        client = oauth.create_client(provider)
+        if not client:
+            current_app.logger.error(f"Failed to create OAuth client for {provider}")
+            abort(503)
+        
+        sent_state = request.args.get('state')
+        session_state = session.get('oauth_state')
+        
+        if not sent_state or sent_state != session_state:
+            current_app.logger.warning(f"OAuth state mismatch for {provider}: sent={sent_state}, session={session_state}")
+            abort(403)
+        
+        # Get access token
+        token = client.authorize_access_token()
+        current_app.logger.info(f"OAuth token obtained for {provider}")
+        
+        # Get user info based on provider
+        if provider == 'google':
+            # With OIDC discovery, Authlib knows the userinfo endpoint
+            userinfo = client.userinfo()
+            email = userinfo.get('email')
+            name = userinfo.get('name') or email
+            avatar = userinfo.get('picture')
+            provider_id = userinfo.get('sub')
+        else:  # github
+            userinfo = client.get('user').json()
+            current_app.logger.info(f"GitHub userinfo: {userinfo.get('login')}")
+            
+            # GitHub email może być None jeśli użytkownik ma prywatne email
+            # Próbujemy pobrać z endpoint /user/emails, ale jeśli się nie uda, używamy fallback
+            emails_resp = None
+            try:
+                emails_resp = client.get('user/emails').json()
+                current_app.logger.info(f"GitHub emails response: {type(emails_resp)}")
+            except Exception as e:
+                current_app.logger.warning(f"Failed to fetch GitHub emails: {e}")
+            
+            # Próbujemy znaleźć primary email
+            primary_email = None
+            if emails_resp and isinstance(emails_resp, list):
+                primary_email = next((e['email'] for e in emails_resp if e.get('primary')), None)
+            
+            # Fallback chain: primary email -> userinfo email -> noreply email
+            email = primary_email or userinfo.get('email') or f"{userinfo.get('login')}@users.noreply.github.com"
+            name = userinfo.get('name') or userinfo.get('login')
+            avatar = userinfo.get('avatar_url')
+            provider_id = str(userinfo.get('id'))
+            
+            current_app.logger.info(f"GitHub OAuth: email={email}, name={name}, provider_id={provider_id}")
 
-    if not email:
-        abort(403)
-    # First, try to find linked identity
-    identity = UserIdentity.query.filter_by(provider=provider, provider_id=provider_id).first()
-    if identity:
-        user = identity.user
-    else:
-        # Fallback by email: link this provider to existing account if email matches
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            user = User(email=email, name=name, avatar_url=avatar, provider=provider, provider_id=provider_id)
-            # Assign default role 'user'; ensure role exists
-            role = Role.query.filter_by(name='user').first()
-            if not role:
-                role = Role(name='user', description='Standard user')
-                db.session.add(role)
-            user.roles.append(role)
-            db.session.add(user)
-            db.session.flush()
-        # Create identity link for this provider
-        ident = UserIdentity(user=user, provider=provider, provider_id=provider_id)
-        db.session.add(ident)
-        db.session.commit()
-    login_user(user)
-    current_app.logger.info(f"auth_login_success user_id={user.id} provider={provider}")
-    return redirect(url_for('core.index'))
+        if not email:
+            current_app.logger.error(f"No email found for {provider} user")
+            abort(403)
+            
+        # First, try to find linked identity
+        identity = UserIdentity.query.filter_by(provider=provider, provider_id=provider_id).first()
+        if identity:
+            user = identity.user
+        else:
+            # Fallback by email: link this provider to existing account if email matches
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                user = User(email=email, name=name, avatar_url=avatar, provider=provider, provider_id=provider_id)
+                # Assign default role 'user'; ensure role exists
+                role = Role.query.filter_by(name='user').first()
+                if not role:
+                    role = Role(name='user', description='Standard user')
+                    db.session.add(role)
+                user.roles.append(role)
+                db.session.add(user)
+                db.session.flush()
+            # Create identity link for this provider
+            ident = UserIdentity(user=user, provider=provider, provider_id=provider_id)
+            db.session.add(ident)
+            db.session.commit()
+        
+        login_user(user)
+        current_app.logger.info(f"auth_login_success user_id={user.id} provider={provider}")
+        return redirect(url_for('core.index'))
+        
+    except Exception as e:
+        current_app.logger.error(f"OAuth callback error for {provider}: {type(e).__name__}: {e}", exc_info=True)
+        flash(f'Błąd podczas logowania przez {provider}. Spróbuj ponownie.', 'danger')
+        return redirect(url_for('auth.login'))
 
 @bp.get('/logout')
 def logout():
