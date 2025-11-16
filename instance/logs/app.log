@@ -3415,3 +3415,22 @@
 [2025-11-16 15:17:31,041] INFO app: Logging initialized
 [2025-11-16 15:17:31,041] INFO app: Logging initialized
 [2025-11-16 15:17:31,041] INFO app: Logging initialized
+[2025-11-16 15:26:17,687] INFO app: Logging initialized
+[2025-11-16 15:26:19,298] INFO app: Logging initialized
+[2025-11-16 15:26:27,424] WARNING app: OAuth state mismatch for google: sent=vl1JWo0tOkt1GyqwJ1-8XA, session=yKVbJusakthJlxVxTwgnUg
+[2025-11-16 15:26:27,425] ERROR app: OAuth callback error for google: Forbidden: 403 Forbidden: You don't have the permission to access the requested resource. It is either read-protected or not readable by the server.
+Traceback (most recent call last):
+  File "/Users/kubasahajdak/Library/CloudStorage/OneDrive-Office365/Praca Inż/projekt/app/auth/routes.py", line 104, in oauth_callback
+    abort(403)
+    ~~~~~^^^^^
+  File "/Users/kubasahajdak/Library/CloudStorage/OneDrive-Office365/Praca Inż/projekt/.venv/lib/python3.13/site-packages/flask/helpers.py", line 272, in abort
+    current_app.aborter(code, *args, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kubasahajdak/Library/CloudStorage/OneDrive-Office365/Praca Inż/projekt/.venv/lib/python3.13/site-packages/werkzeug/exceptions.py", line 863, in __call__
+    raise self.mapping[code](*args, **kwargs)
+werkzeug.exceptions.Forbidden: 403 Forbidden: You don't have the permission to access the requested resource. It is either read-protected or not readable by the server.
+[2025-11-16 15:27:30,043] INFO app: Logging initialized
+[2025-11-16 15:28:31,785] INFO app: Logging initialized
+[2025-11-16 15:29:25,333] INFO app: Logging initialized
+[2025-11-16 15:29:33,134] INFO app: Logging initialized
+[2025-11-16 15:30:20,206] INFO app: Logging initialized
