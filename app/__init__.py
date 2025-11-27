@@ -36,11 +36,9 @@ def create_app():
     login_manager.init_app(app)
     limiter.init_app(app)
 
-    # Security headers via Talisman
-    # CSP will be set dynamically with nonce in after_request
     Talisman(
         app,
-        content_security_policy=False,  # Disable Talisman's CSP, we'll set it manually
+        content_security_policy=False,
         force_https=app.config.get('SESSION_COOKIE_SECURE', False),
         session_cookie_http_only=True,
         frame_options='DENY',
@@ -55,12 +53,10 @@ def create_app():
         referrer_policy='strict-origin-when-cross-origin',
     )
 
-    # Ensure correct URL scheme / remote IP when behind Heroku's reverse proxy
-    # This allows url_for(..., _external=True) to generate https links and Talisman force_https to work.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
     login_manager.login_view = 'auth.login'
-    from .models import User, ApiToken  # imported after app & db setup
+    from .models import User, ApiToken
 
     @login_manager.user_loader
     def load_user(user_id: str):
@@ -70,9 +66,6 @@ def create_app():
 
     @login_manager.request_loader
     def load_user_from_request(req):
-        """Stateless bearer token auth for API requests.
-        Looks for Authorization: Bearer <token> and returns the associated user without creating a session.
-        """
         auth = req.headers.get('Authorization', '')
         if not auth.startswith('Bearer '):
             return None
@@ -80,7 +73,6 @@ def create_app():
         if not token:
             return None
         th = sha256(token.encode('utf-8')).hexdigest()
-        # Force session to reload from DB (fresh state for revoked tokens)
         db.session.expire_all()
         tok = db.session.execute(
             db.select(ApiToken).filter_by(token_hash=th, revoked=False)
@@ -90,7 +82,6 @@ def create_app():
         user = db.session.get(User, tok.user_id)
         if not user:
             return None
-        # Update last_used_at (timezone aware)
         tok.last_used_at = datetime.now(timezone.utc)
         db.session.commit()
         return user
@@ -108,29 +99,23 @@ def create_app():
     app.register_blueprint(tasks_bp, url_prefix='/tasks')
     app.register_blueprint(api_bp, url_prefix='/api')
 
-    # Import models so Alembic sees metadata
-    from . import models  # noqa: F401
+    from . import models
 
-    # Logging setup
     setup_logging(app)
 
-    # Request ID for correlation (simple header or generated)
     @app.before_request
     def attach_request_id():
         rid = request.headers.get('X-Request-ID') or os.urandom(8).hex()
         g.request_id = rid
     
-    # CSP nonce generation for inline scripts/styles
     @app.before_request
     def generate_csp_nonce():
         g.csp_nonce = secrets.token_urlsafe(16)
 
     @app.after_request
     def add_security_headers(resp):
-        # Add X-Request-ID
         resp.headers['X-Request-ID'] = getattr(g, 'request_id', '-')
         
-        # Add CSP with nonce
         nonce = getattr(g, 'csp_nonce', '')
         csp_directives = [
             "default-src 'self'",
@@ -150,7 +135,6 @@ def create_app():
 
     @app.context_processor
     def inject_app_version():
-        # Expose app_version to all templates
         return {
             'app_version': app.config.get('APP_VERSION', 'dev')
         }
@@ -185,7 +169,6 @@ def setup_logging(app):
     log_dir = os.path.join(app.instance_path, 'logs')
     os.makedirs(log_dir, exist_ok=True)
     fmt = logging.Formatter('[%(asctime)s] %(levelname)s %(name)s: %(message)s')
-    # On Heroku (DYNO env var) use stdout; filesystem is ephemeral and logs should go to aggregated logging
     if 'DYNO' in os.environ:
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(fmt)

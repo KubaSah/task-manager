@@ -18,9 +18,6 @@ def health():
     return jsonify(status='ok')
 
 
-# Bearer token auth moved to a request_loader in app factory to keep it stateless
-
-
 def _paginate_query(query, page: int, per_page: int):
     total = query.count()
     items = query.offset((page-1)*per_page).limit(per_page).all()
@@ -33,11 +30,10 @@ def _paginate_query(query, page: int, per_page: int):
 def list_tasks():
     page = max(1, int(request.args.get('page', 1)))
     per_page = min(100, max(1, int(request.args.get('per_page', 20))))
-    # Only tasks from user's projects
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     pids = [m.project_id for m in memberships]
     q = Task.query.filter(Task.project_id.in_(pids)) if pids else Task.query.filter(False)
-    # Filters
+    
     text = (request.args.get('q') or '').strip()
     status = request.args.get('status')
     priority = request.args.get('priority')
@@ -107,7 +103,6 @@ def create_token():
     t = ApiToken(user_id=current_user.id, name=name, token_hash=th)
     db.session.add(t)
     db.session.commit()
-    # Return the raw token once; client must store it
     return jsonify({'token': raw, 'id': t.id}), 201
 
 
@@ -130,7 +125,6 @@ def create_task():
     project = db.session.get(Project, data['project_id'])
     if not project:
         abort(404)
-    # Require membership for the target project
     require_project_membership(project.id)
     title = str(data['title']).strip()
     if not title:

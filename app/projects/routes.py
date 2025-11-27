@@ -15,7 +15,6 @@ bp = Blueprint('projects', __name__)
 @bp.get('/')
 @login_required
 def list_projects():
-    # Show only projects where user has membership
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     project_ids = [m.project_id for m in memberships]
     projects = Project.query.filter(Project.id.in_(project_ids)).order_by(Project.created_at.desc()).all() if project_ids else []
@@ -28,7 +27,6 @@ def list_projects():
 def create_project():
     form = ProjectForm()
     if form.validate_on_submit():
-        # basic sanitization
         description = clean(form.description.data or '', tags=[], strip=True)
         p = Project(name=form.name.data.strip(), key=form.key.data.strip().upper(), description=description, owner=current_user)
         db.session.add(p)
@@ -36,13 +34,11 @@ def create_project():
             db.session.flush()
         except Exception as e:
             db.session.rollback()
-            # Check for duplicate key
             if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
                 flash('Klucz projektu już istnieje – wybierz inny', 'danger')
                 return render_template('projects/create.html', form=form)
             flash('Błąd podczas tworzenia projektu', 'danger')
             return render_template('projects/create.html', form=form)
-        # Add membership as owner
         owner_membership = Membership(user_id=current_user.id, project_id=p.id, role='owner')
         db.session.add(owner_membership)
         db.session.commit()
@@ -65,7 +61,6 @@ def project_detail(project_id: int):
 @login_required
 def delete_project(project_id: int):
     p = db.get_or_404(Project, project_id)
-    # Require owner or admin (project-level)
     _ = require_project_membership(project_id, roles=('owner','admin'))
     db.session.delete(p)
     db.session.commit()
@@ -158,34 +153,28 @@ def remove_member(project_id: int, membership_id: int):
 @bp.post('/<int:project_id>/transfer-owner')
 @login_required
 def transfer_ownership(project_id: int):
-    """Transfer project ownership to another member. Only current owner can do this."""
     role = require_project_membership(project_id, roles=('owner',))
     p = db.get_or_404(Project, project_id)
     
-    # Get new owner user ID
     new_owner_id = request.form.get('new_owner_id', type=int)
     if not new_owner_id:
         flash('Nie podano nowego właściciela', 'danger')
         return redirect(url_for('projects.project_members', project_id=project_id))
     
-    # Prevent transferring to self
     if new_owner_id == current_user.id:
         flash('Już jesteś właścicielem tego projektu', 'info')
         return redirect(url_for('projects.project_members', project_id=project_id))
     
-    # Verify new owner is a project member
     new_owner_membership = Membership.query.filter_by(project_id=project_id, user_id=new_owner_id).first()
     if not new_owner_membership:
         flash('Nowy właściciel musi być członkiem projektu', 'danger')
         return redirect(url_for('projects.project_members', project_id=project_id))
     
-    # Get current owner membership
     current_owner_membership = Membership.query.filter_by(project_id=project_id, user_id=current_user.id, role='owner').first()
     if not current_owner_membership:
         flash('Błąd: nie znaleziono membership właściciela', 'danger')
         return redirect(url_for('projects.project_members', project_id=project_id))
     
-    # Perform transfer: demote current owner to admin, promote new owner
     current_owner_membership.role = 'admin'
     new_owner_membership.role = 'owner'
     p.owner_id = new_owner_id

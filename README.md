@@ -1,76 +1,123 @@
-# Secure Taskboard (Flask)
+# System Zarządzania Zadaniami
 
-Projekt inżynierski: Bezpieczna aplikacja webowa do zarządzania zadaniami (inspirowana JIRA) z mechanizmami ochrony przed wybranymi atakami z OWASP Top 10.
+Aplikacja webowa do zarządzania projektami i zadaniami z zaawansowanymi mechanizmami bezpieczeństwa.
 
-## Wstęp
-Aplikacja wykorzystuje Flask (app factory, blueprints) oraz zestaw rozszerzeń zapewniających bezpieczeństwo: CSRF, nagłówki bezpieczeństwa (CSP, HSTS, X-Frame-Options), rate limiting, walidacja danych i sanitizacja treści.
+## O projekcie
+System umożliwia zespołom zarządzanie projektami i zadaniami w bezpieczny sposób. Aplikacja wykorzystuje Flask z uwierzytelnianiem OAuth, kontrolą dostępu opartą na rolach oraz wielowarstwową ochroną przed typowymi zagrożeniami.
 
-## Uruchomienie (dev)
-1. Utwórz i aktywuj wirtualne środowisko
-2. `pip install -r requirements.txt`
-3. Skopiuj `.env.example` do `.env` i uzupełnij wartości (OAuth klucze opcjonalne)
-4. Zainicjuj DB: `flask db upgrade`
-5. Start: `flask --app run run --debug` lub `python run.py`
+## Uruchomienie lokalne
+1. Sklonuj repozytorium
+2. Utwórz i aktywuj wirtualne środowisko:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   venv\Scripts\activate     # Windows
+   ```
+3. Zainstaluj zależności:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Skonfiguruj zmienne środowiskowe (utwórz plik `.env`):
+   ```
+   SECRET_KEY=twoj-losowy-klucz
+   DATABASE_URL=postgresql://user:password@localhost/dbname
+   OAUTH_GOOGLE_CLIENT_ID=...
+   OAUTH_GOOGLE_CLIENT_SECRET=...
+   OAUTH_GITHUB_CLIENT_ID=...
+   OAUTH_GITHUB_CLIENT_SECRET=...
+   OAUTH_REDIRECT_BASE=http://localhost:5001
+   ```
+5. Zainicjuj bazę danych:
+   ```bash
+   flask db upgrade
+   ```
+6. Uruchom aplikację:
+   ```bash
+   python run.py
+   ```
 
-## Struktura
+## Struktura projektu
 ```
 app/
-  auth/       # logowanie (OAuth SSO w trakcie implementacji)
-  core/       # strona główna
-  projects/   # moduł projektów
-  tasks/      # moduł zadań
-  api/        # endpointy JSON (zdrowie, później CRUD)
-config.py     # konfiguracja środowiskowa
-run.py        # punkt wejścia
+  auth/       - uwierzytelnianie OAuth (Google, GitHub)
+  core/       - strona główna, ustawienia, wyszukiwanie
+  projects/   - zarządzanie projektami
+  tasks/      - zarządzanie zadaniami
+  api/        - API REST
+  security/   - kontrola dostępu i audyt
+  static/     - pliki CSS i JavaScript
+  templates/  - szablony HTML
+config.py     - konfiguracja aplikacji
+run.py        - punkt startowy
 ```
 
-## Mapowanie zabezpieczeń -> OWASP Top 10 (aktualne)
+## Funkcjonalności
 
-Wybrane obszary (zgodnie z tematem pracy) oraz implementacje i walidacja testami:
+### Zarządzanie projektami
+- Tworzenie projektów z unikalnym kluczem
+- System ról: właściciel, administrator, członek, obserwator
+- Dodawanie członków zespołu
+- Przekazywanie własności projektu
 
-| OWASP 2021 | Cel | Implementacja | Walidacja |
-|------------|-----|---------------|-----------|
-| A01 Broken Access Control | Brak IDOR, izolacja projektów | Kontrole w `security/permissions.py`, sprawdzanie członkostwa na wszystkich widokach/endpointach; role per-projekt | Testy: `tests/test_access_control.py`, `tests/test_permissions.py` |
-| A02 Cryptographic Failures | Bezpieczeństwo danych w tranzycie i tajemnic | HTTPS wymuszony w produkcji (Talisman force_https + HSTS), ciasteczka `Secure`/`HttpOnly`/`SameSite=Lax`, brak haseł w DB (OAuth), tokeny API przechowywane jako SHA-256 | Testy nagłówków: `tests/test_security_headers.py` |
-| A03 Injection | XSS/SQLi mitigacje | ORM (parametryzacja), Jinja autoescape, `bleach` dla opisów/komentarzy, CSP; usunięty `|safe` w komentarzach | Testy: `tests/test_injection.py`, `tests/test_api.py` |
-| A05 Security Misconfiguration | Twarde nagłówki + bezpieczna konfiguracja | Flask-Talisman: CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy; Rate limiting; ProxyFix; brak DEBUG w prod | Testy: `tests/test_security_headers.py`, `tests/test_rate_limit.py` |
-| A07 Identification & Authentication Failures | Silne logowanie i sesje | OAuth (Google/GitHub) via Authlib, brak haseł lokalnych; rate limiting na login/callback; sesje: `HttpOnly`, `Secure`, `SameSite=Lax`, 8h TTL | Testy integracyjne (logowanie pośrednio), możliwość dodania testu e2e |
-| A09 Security Logging & Monitoring | Ślad audytowy działań | `AuditLog` dla zmian statusu, przypisania, usuwania; X-Request-ID; logi aplikacji | Testy: `tests/test_audit.py` |
+### Zarządzanie zadaniami
+- Tworzenie i edycja zadań
+- Statusy: do zrobienia, w toku, zrobione
+- Priorytety: niski, średni, wysoki
+- Przypisywanie zadań do członków zespołu
+- Komentarze do zadań
+- Filtrowanie i wyszukiwanie
 
-Pozostałe (A04, A06, A08, A10) nie są głównym celem implementacyjnym, ale: mamy pełne wersjonowanie zależności (A06), CI z `pip-audit` i `bandit`, ograniczamy powierzchnię SSRF (brak user-controlled SSRF, jedynie zaufane wywołania OAuth), a projekt dokumentuje decyzje projektowe (A04).
+### Bezpieczeństwo
+- Uwierzytelnianie OAuth (bez przechowywania haseł)
+- Kontrola dostępu oparta na rolach
+- Ochrona przed CSRF
+- Rate limiting
+- Bezpieczne nagłówki HTTP
+- Sanityzacja danych wejściowych
+- Dziennik audytu działań
 
-### Kryteria sukcesu (dla pracy inż.)
-- Funkcjonalna aplikacja do zarządzania zadaniami (projekty, zadania, komentarze, filtrowanie, DnD).
-- Uwierzytelnianie wyłącznie przez OAuth, brak przechowywania haseł użytkowników.
-- Twarde nagłówki bezpieczeństwa i bezpieczne cookies (HttpOnly, Secure, SameSite=Lax).
-- Izolacja danych per projekt i role (owner/admin/member/viewer) – weryfikowane testami automatycznymi.
-- Ochrona przed XSS/SQL Injection – weryfikowane testami.
-- Rate limiting na krytycznych endpointach (login, API) – testy.
-- Audyt kluczowych akcji – testy.
-- CI: testy + skan zależności (pip-audit) + analiza statyczna (bandit) na każdym PR.
+### API
+- Tokeny API dla integracji
+- Endpointy REST dla zadań
+- Dokumentacja w API Explorer
 
-### Braki i plan
-- CSP z nonce – zaimplementowane (per-request nonce, brak `unsafe-inline`); szablony zaktualizowane.
-- Dodatkowe testy A01 (np. próba filtrowania po cudzym `project_id` w API powinna zwrócić puste/403) – częściowo dodane, można rozszerzyć.
-- Dokumentacja modelu zagrożeń (Threat Model) i diagram architektury – do uzupełnienia w README.
-- Produkcja: upewnić się, że `OAUTH_REDIRECT_BASE` ustawione na HTTPS domeny, a dostawcy OAuth mają poprawne redirect URIs.
+## Implementowane zabezpieczenia (OWASP Top 10)
 
-## Wyszukiwarka globalna
+| Zagrożenie | Implementacja | Walidacja |
+|------------|---------------|-----------|
+| A01 Broken Access Control | Kontrola członkostwa w projektach, izolacja danych, weryfikacja uprawnień na poziomie ról | `tests/test_access_control.py`, `tests/test_permissions.py` |
+| A02 Cryptographic Failures | HTTPS w produkcji, bezpieczne ciasteczka (Secure, HttpOnly, SameSite), tokeny API jako SHA-256 | `tests/test_security_headers.py` |
+| A03 Injection | SQLAlchemy ORM (parametryzacja), autoescape w Jinja2, sanityzacja HTML przez bleach, CSP | `tests/test_injection.py` |
+| A05 Security Misconfiguration | Flask-Talisman (CSP, HSTS, X-Frame-Options, X-Content-Type-Options), rate limiting, ProxyFix | `tests/test_security_headers.py`, `tests/test_rate_limit.py` |
+| A07 Authentication Failures | OAuth (Google/GitHub), brak lokalnych haseł, rate limiting na logowanie, bezpieczne sesje | Testy integracyjne |
+| A09 Security Logging | Dziennik audytu dla kluczowych działań, X-Request-ID w nagłówkach | `tests/test_audit.py` |
 
-- Pasek wyszukiwania w topbar prowadzi do `/search` i przeszukuje projekty oraz zadania, do których użytkownik ma dostęp.
-- Obsługiwane jest proste wyszukiwanie tekstowe w: nazwie/kluczu/opisie projektu oraz tytule/opisie zadania (ILIKE).
-- Wyniki są ograniczane do projektów, w których użytkownik jest członkiem; brak wycieków danych między projektami.
+## Testy
 
-## Czego brakuje do pełnego zakresu projektu
+Projekt zawiera kompleksowy zestaw testów jednostkowych i integracyjnych:
 
-- Zrzuty ekranu (README): ekran logowania, lista zadań z filtrami, log audytu.
-- Testy E2E/UI (np. Playwright) dla krytycznych ścieżek: logowanie, tworzenie projektu/zadania, filtrowanie, wyszukiwanie.
-- Notyfikacje email/web (np. o przypisaniu/zmianie statusu) – poza zakresem MVP, do rozważenia.
-- Mechanizm zapraszania użytkowników do projektu (email z tokenem) – aktualnie dodawanie po adresie.
-- Dostępność (a11y): przegląd kontrastów i focus states, etykiety ARIA.
-- Monitoring błędów (np. Sentry) i metryki (np. Prometheus/Grafana lub usługowe odpowiedniki).
-- Kopie zapasowe i polityka retencji (szczególnie dla Postgres w produkcji).
-- Polityka prywatności i regulamin (dla publicznego wdrożenia), ewentualnie baner cookies jeśli wymogą to analityki.
+```bash
+pytest
+```
+
+Kategorie testów:
+- `test_access_control.py` - kontrola dostępu i izolacja danych
+- `test_permissions.py` - weryfikacja systemu ról
+- `test_injection.py` - ochrona przed XSS i SQL Injection
+- `test_csrf.py` - ochrona przed atakami CSRF
+- `test_security_headers.py` - weryfikacja nagłówków bezpieczeństwa
+- `test_rate_limit.py` - limitowanie liczby żądań
+- `test_audit.py` - dziennik audytu
+- `test_api.py` - endpointy API
+- `test_tokens.py` - tokeny API
+
+## Wyszukiwanie
+
+Pasek wyszukiwania w górnym menu pozwala przeszukiwać:
+- Projekty (nazwa, klucz, opis)
+- Zadania (tytuł, opis)
+
+Wyszukiwanie uwzględnia tylko projekty i zadania, do których użytkownik ma dostęp.
 
 ## Threat Model (Model Zagrożeń)
 
@@ -145,151 +192,100 @@ Opcja B (alembic downgrade/upgrade):
 - `flask db downgrade base`
 - `flask db upgrade`
 
-## API Tokens
-- Tworzenie tokenu: `POST /api/tokens` (JSON: `{ "name": "mój token" }`) — odpowiedź zawiera jednorazowo surowy token
-- Lista tokenów: `GET /api/tokens`
-- Unieważnienie: `DELETE /api/tokens/<id>`
-- Użycie: dodaj nagłówek `Authorization: Bearer <TOKEN>` do żądań API (działa alternatywnie do sesji)
-- Bezpieczeństwo: w bazie przechowywany jest wyłącznie hash (sha256), pole `last_used_at` aktualizowane przy każdym użyciu
+## API
 
-## API – Tasks
-- Lista zadań: `GET /api/tasks`
-  - Parametry zapytania (opcjonalne):
-    - `page` (domyślnie 1), `per_page` (domyślnie 20, max 100)
-    - `q` – fulltext po tytule i opisie (ILIKE)
-    - `status` – jedno z: `todo`, `in_progress`, `done`
-    - `priority` – jedno z: `low`, `medium`, `high`
-    - `project_id` – ograniczenie do jednego projektu (musi należeć do użytkownika)
-  - Wymaga uwierzytelnienia (sesja lub `Authorization: Bearer <TOKEN>`)
-  - Zwraca: `{ page, per_page, total, pages, items: [...] }`
+### Uwierzytelnianie
+- Sesja (ciasteczko)
+- Token Bearer: `Authorization: Bearer <TOKEN>`
 
-## Audit log
-Zapisywane operacje (wybrane):
-- Utworzenie/usunięcie projektu
-- Dodanie/usunięcie członka, zmiana roli
-- Zmiana statusu zadania, zmiana assignee, usunięcie zadania
-- Usunięcie komentarza
-
-Struktura rekordów: `actor_id`, `action`, `entity_type`, `entity_id`, `project_id`, `meta`, `created_at`.
-
-## Wyszukiwanie i filtrowanie zadań
-- Widok tablicy zadań (`/tasks`) obsługuje parametry `q` (tekst w tytule/opisie), `status`, `priority`, `project`.
-- Drag&drop działa także po filtrowaniu (UI aktualizuje się optymistycznie).
-
-## Testy
-- CSRF: testy sprawdzające odrzucanie POST bez tokenu oraz akceptację z tokenem (`tests/test_csrf.py`).
-- Rate limiting: test limitu na `/api/tasks` (`tests/test_rate_limit.py`).
-- Nagłówki bezpieczeństwa: `tests/test_security_headers.py`.
-- XSS/SQLi: `tests/test_injection.py`.
-- Dostęp: `tests/test_access_control.py`, `tests/test_permissions.py`.
-
-## Deployment Checklist
-
-### 1. Zmienne środowiskowe (produkcja)
-Upewnij się, że następujące zmienne środowiskowe są ustawione:
-
+### Tworzenie tokenu API
 ```bash
-# Aplikacja
-SECRET_KEY=<losowy, 32+ znaki>
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-FLASK_ENV=production
-
-# OAuth Redirect Base (HTTPS!)
-OAUTH_REDIRECT_BASE=https://twoja-domena.com
-
-# Google OAuth (opcjonalnie)
-GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxx
-
-# GitHub OAuth (opcjonalnie)
-GITHUB_CLIENT_ID=xxx
-GITHUB_CLIENT_SECRET=xxx
-
-# Sesje i bezpieczeństwo
-SESSION_COOKIE_SECURE=1
-SESSION_COOKIE_SAMESITE=Lax
-PERMANENT_SESSION_LIFETIME=28800  # 8 godzin w sekundach
+curl -X POST https://twoja-domena.com/api/tokens \
+  -H "Content-Type: application/json" \
+  -d '{"name": "mój token"}' \
+  --cookie "session=..."
 ```
 
-### 2. Konfiguracja OAuth Providers
+### Zarządzanie tokenami
+- `GET /api/tokens` - lista tokenów użytkownika
+- `POST /api/tokens` - utworzenie nowego tokenu (zwraca surowy token jednorazowo)
+- `DELETE /api/tokens/<id>` - unieważnienie tokenu
+
+### Endpointy zadań
+- `GET /api/tasks` - lista zadań (parametry: page, per_page, q, status, priority, project_id)
+- `POST /api/tasks` - utworzenie zadania
+- `GET /api/tasks/<id>` - szczegóły zadania
+- `PATCH /api/tasks/<id>` - edycja zadania
+- `POST /api/tasks/<id>/comments` - dodanie komentarza
+
+Dokumentacja interaktywna: `/api-explorer`
+
+## Dziennik audytu
+
+System rejestruje kluczowe operacje:
+- Zarządzanie projektami (tworzenie, usuwanie)
+- Zarządzanie członkami (dodawanie, usuwanie, zmiana roli)
+- Operacje na zadaniach (zmiana statusu, przypisanie, usuwanie)
+- Operacje na komentarzach (usuwanie)
+
+Dostęp do logów: `/audit`
+Export do CSV: `/audit/export`
+
+## Deployment
+
+### Konfiguracja zmiennych środowiskowych
+
+```bash
+SECRET_KEY=<losowy-32-znakowy-klucz>
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+FLASK_ENV=production
+OAUTH_REDIRECT_BASE=https://twoja-domena.com
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+SESSION_COOKIE_SECURE=1
+SESSION_COOKIE_SAMESITE=Lax
+PERMANENT_SESSION_LIFETIME=28800
+```
+
+### Konfiguracja OAuth
 
 #### Google Cloud Console
 1. Przejdź do [Google Cloud Console](https://console.cloud.google.com/)
-2. Wybierz swój projekt lub utwórz nowy
-3. Przejdź do **APIs & Services** → **Credentials**
-4. Edytuj swój OAuth 2.0 Client ID
-5. W sekcji **Authorized redirect URIs** dodaj:
-   ```
-   https://twoja-domena.com/auth/callback/google
-   ```
-6. Zapisz zmiany
+2. Wybierz projekt lub utwórz nowy
+3. **APIs & Services** → **Credentials**
+4. Dodaj Authorized redirect URI: `https://twoja-domena.com/auth/callback/google`
 
-#### GitHub OAuth Apps
-1. Przejdź do [GitHub Developer Settings](https://github.com/settings/developers)
-2. Wybierz swoją aplikację OAuth lub utwórz nową
-3. Ustaw **Homepage URL**: `https://twoja-domena.com`
-4. Ustaw **Authorization callback URL**: `https://twoja-domena.com/auth/callback/github`
-5. Zapisz zmiany
+#### GitHub OAuth
+1. [GitHub Developer Settings](https://github.com/settings/developers)
+2. Utwórz nową aplikację OAuth
+3. Homepage URL: `https://twoja-domena.com`
+4. Authorization callback URL: `https://twoja-domena.com/auth/callback/github`
 
-### 3. Baza danych
+### Inicjalizacja bazy danych
 ```bash
-# Uruchom migracje
 flask db upgrade
-
-# Opcjonalnie: zweryfikuj strukturę
-flask db current
 ```
 
-### 4. HTTPS i bezpieczeństwo
-- ✅ Upewnij się, że aplikacja jest dostępna tylko przez HTTPS
-- ✅ Sprawdź, czy `SESSION_COOKIE_SECURE=1` jest ustawione
-- ✅ Zweryfikuj nagłówki bezpieczeństwa (użyj [SecurityHeaders.com](https://securityheaders.com))
-- ✅ Upewnij się, że `DEBUG=False` w produkcji
-- ✅ Sprawdź logi aplikacji pod kątem błędów konfiguracji
+### Weryfikacja wdrożenia
+- [ ] Logowanie przez Google OAuth
+- [ ] Logowanie przez GitHub OAuth
+- [ ] Tworzenie projektu
+- [ ] Tworzenie zadania
+- [ ] Filtrowanie i wyszukiwanie
+- [ ] API Explorer
+- [ ] Dziennik audytu
 
-### 5. Heroku (przykład)
-Jeśli deployu jesz na Heroku:
+## Technologie
 
-```bash
-# Ustaw zmienne środowiskowe
-heroku config:set SECRET_KEY="xxx"
-heroku config:set OAUTH_REDIRECT_BASE="https://twoja-app.herokuapp.com"
-heroku config:set GOOGLE_CLIENT_ID="xxx"
-heroku config:set GOOGLE_CLIENT_SECRET="xxx"
-heroku config:set GITHUB_CLIENT_ID="xxx"
-heroku config:set GITHUB_CLIENT_SECRET="xxx"
-
-# Heroku automatycznie ustawia DATABASE_URL dla PostgreSQL
-# Zweryfikuj:
-heroku config:get DATABASE_URL
-
-# Push i migracje
-git push heroku main
-heroku run flask db upgrade
-```
-
-### 6. Weryfikacja po wdrożeniu
-- [ ] Zaloguj się przez Google OAuth
-- [ ] Zaloguj się przez GitHub OAuth
-- [ ] Utwórz projekt testowy
-- [ ] Utwórz zadanie testowe
-- [ ] Sprawdź drag & drop na tablicy zadań
-- [ ] Zweryfikuj logi audytu w `/settings/audit`
-- [ ] Przetestuj filtry i wyszukiwanie
-- [ ] Sprawdź API Explorer (`/settings/api-explorer`)
-- [ ] Wygeneruj i przetestuj API token
-
-### 7. Monitoring i logi
-- Skonfiguruj monitoring uptime (np. UptimeRobot, Pingdom)
-- Przejrzyj logi aplikacji regularnie
-- Ustaw alerty dla błędów 500
-- Monitoruj użycie bazy danych
-
-### 8. Bezpieczeństwo CI/CD
-- ✅ GitHub Actions uruchamia testy przy każdym PR
-- ✅ `pip-audit` skanuje zależności
-- ✅ `bandit` analizuje kod pod kątem podatności
-- Rozważ dodanie SAST/DAST w pipeline
+- **Backend**: Flask 3.x, SQLAlchemy
+- **Baza danych**: PostgreSQL (produkcja), SQLite (testy)
+- **Uwierzytelnianie**: OAuth 2.0 (Google, GitHub) via Authlib
+- **Bezpieczeństwo**: Flask-Talisman, Flask-WTF (CSRF), Flask-Limiter
+- **Frontend**: Jinja2, TailwindCSS
+- **Testy**: pytest
 
 ## Licencja
-Internal academic project.
+
+Projekt akademicki.

@@ -53,7 +53,6 @@ def revoke_token_page(token_id: int):
 @bp.get('/audit')
 @login_required
 def audit_page():
-    # Ogranicz wgląd do logów związanych z projektami użytkownika lub własnych akcji
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     pids = [m.project_id for m in memberships]
     q = AuditLog.query
@@ -62,14 +61,13 @@ def audit_page():
     else:
         q = q.filter(AuditLog.actor_id == current_user.id)
     
-    # Pobierz project_id jako int i waliduj
     project_id_str = request.args.get('project', '').strip()
     project_id = None
     if project_id_str:
         try:
             project_id = int(project_id_str)
             if project_id not in pids:
-                project_id = None  # Ignoruj nieprawidłowy/niedostępny projekt
+                project_id = None
         except (ValueError, TypeError):
             project_id = None
     
@@ -81,7 +79,6 @@ def audit_page():
     logs = q.order_by(AuditLog.created_at.desc()).offset((page-1)*per_page).limit(per_page).all()
     total = q.count()
     pages = (total + per_page - 1) // per_page if total else 1
-    # Dla filtra projektów przygotuj listę
     projects = Project.query.filter(Project.id.in_(pids)).all() if pids else []
     return render_template('core/audit.html', logs=logs, projects=projects, page=page, pages=pages, total=total, selected_project=project_id)
 
@@ -89,10 +86,8 @@ def audit_page():
 @bp.get('/api-explorer')
 @login_required
 def api_explorer():
-    """Widok UI pokazujący dostępne API endpointy i przykładowe odpowiedzi."""
     import json
     from ..models import Task
-    # Przykładowe dane dla demonstracji
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     pids = [m.project_id for m in memberships]
     sample_tasks = Task.query.filter(Task.project_id.in_(pids)).limit(5).all() if pids else []
@@ -123,9 +118,7 @@ def api_explorer():
 @bp.get('/search')
 @login_required
 def search():
-    """Prosta wyszukiwarka globalna po projektach i zadaniach dostępnych użytkownikowi."""
     qtext = (request.args.get('q') or '').strip()
-    # Zbierz projekty, do których użytkownik ma dostęp
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     pids = [m.project_id for m in memberships]
 
@@ -164,7 +157,6 @@ def audit_export():
     else:
         q = q.filter(AuditLog.actor_id == current_user.id)
     
-    # Walidacja project_id tak samo jak w audit_page
     project_id_str = request.args.get('project', '').strip()
     project_id = None
     if project_id_str:

@@ -15,14 +15,11 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.before_app_request
 def init_oauth_clients():
-    # Initialize lazily to allow config override in tests
     if 'oauth_inited' in current_app.config:
         return
     oauth.init_app(current_app)
     cfg = current_app.config
-    # Google
     if cfg.get('OAUTH_GOOGLE_CLIENT_ID') and cfg.get('OAUTH_GOOGLE_CLIENT_SECRET'):
-        # Use OIDC discovery so Authlib knows jwks_uri and userinfo endpoint
         oauth.register(
             name='google',
             client_id=cfg['OAUTH_GOOGLE_CLIENT_ID'],
@@ -31,7 +28,6 @@ def init_oauth_clients():
             authorize_params={'prompt': 'consent'},
             client_kwargs={'scope': ' '.join(cfg['OAUTH_GOOGLE_SCOPE'])}
         )
-    # GitHub
     if cfg.get('OAUTH_GITHUB_CLIENT_ID') and cfg.get('OAUTH_GITHUB_CLIENT_SECRET'):
         oauth.register(
             name='github',
@@ -48,11 +44,9 @@ def init_oauth_clients():
 @bp.route('/login', methods=['GET'])
 @limiter.limit("10 per minute")
 def login():
-    """OAuth-only login page with provider selection."""
     if current_user.is_authenticated:
         return redirect(url_for('core.index'))
     
-    # Check if OAuth providers are configured
     google_enabled = bool(current_app.config.get('OAUTH_GOOGLE_CLIENT_ID'))
     github_enabled = bool(current_app.config.get('OAUTH_GITHUB_CLIENT_ID'))
     
@@ -95,13 +89,12 @@ def oauth_callback(provider: str):
         abort(403)
     token = client.authorize_access_token()
     if provider == 'google':
-        # With OIDC discovery, Authlib knows the userinfo endpoint
         userinfo = client.userinfo()
         email = userinfo.get('email')
         name = userinfo.get('name') or email
         avatar = userinfo.get('picture')
         provider_id = userinfo.get('sub')
-    else:  # github
+    else:
         userinfo = client.get('user').json()
         emails_resp = client.get('user/emails').json()
         primary_email = next((e['email'] for e in emails_resp if e.get('primary')), None)
@@ -112,16 +105,13 @@ def oauth_callback(provider: str):
 
     if not email:
         abort(403)
-    # First, try to find linked identity
     identity = UserIdentity.query.filter_by(provider=provider, provider_id=provider_id).first()
     if identity:
         user = identity.user
     else:
-        # Fallback by email: link this provider to existing account if email matches
         user = User.query.filter_by(email=email).first()
         if not user:
             user = User(email=email, name=name, avatar_url=avatar, provider=provider, provider_id=provider_id)
-            # Assign default role 'user'; ensure role exists
             role = Role.query.filter_by(name='user').first()
             if not role:
                 role = Role(name='user', description='Standard user')
@@ -129,7 +119,6 @@ def oauth_callback(provider: str):
             user.roles.append(role)
             db.session.add(user)
             db.session.flush()
-        # Create identity link for this provider
         ident = UserIdentity(user=user, provider=provider, provider_id=provider_id)
         db.session.add(ident)
         db.session.commit()
@@ -150,7 +139,6 @@ def logout():
 
 @bp.get('/debug/oauth-config')
 def debug_oauth_config():
-    """Debug endpoint to check OAuth configuration"""
     return {
         "oauth_redirect_base": current_app.config.get('OAUTH_REDIRECT_BASE'),
         "google_callback_url": _build_redirect_uri('google'),

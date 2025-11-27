@@ -13,7 +13,6 @@ def now_utc():
     return datetime.now(timezone.utc)
 
 
-# Association table for global user roles (e.g., 'admin')
 user_roles = db.Table(
     'user_roles',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
@@ -37,12 +36,10 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     name = db.Column(db.String(120), nullable=False)
     avatar_url: Optional[str] = db.Column(db.String(512))
-    provider = db.Column(db.String(50), nullable=False)  # 'google' | 'github'
+    provider = db.Column(db.String(50), nullable=False)
     provider_id = db.Column(db.String(255), nullable=False)
-    # Local auth (optional): store hashed password when provider=='local'
     password_hash = db.Column(db.String(255))
     
-    # Legacy columns from password login (kept for DB compatibility, not used in OAuth-only flow)
     failed_login_attempts = db.Column(db.Integer, default=0, nullable=False, server_default='0')
     account_locked_until = db.Column(db.DateTime)
     last_failed_login = db.Column(db.DateTime)
@@ -58,10 +55,9 @@ class User(UserMixin, db.Model):
         UniqueConstraint('provider', 'provider_id', name='uq_provider_identity'),
     )
 
-    def get_id(self):  # Flask-Login requires string id
+    def get_id(self):
         return str(self.id)
 
-    # Password helpers (only for local provider users)
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
 
@@ -93,7 +89,7 @@ class Project(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
-    key = db.Column(db.String(20), nullable=False, unique=True)  # like JIRA key
+    key = db.Column(db.String(20), nullable=False, unique=True)
     description = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
 
@@ -135,11 +131,10 @@ class Task(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id', ondelete='CASCADE'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    status = db.Column(db.String(20), nullable=False, default='todo')  # 'todo'|'in_progress'|'done'
-    priority = db.Column(db.String(10), nullable=False, default='medium')  # 'low'|'medium'|'high'
+    status = db.Column(db.String(20), nullable=False, default='todo')
+    priority = db.Column(db.String(10), nullable=False, default='medium')
 
     assignee_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
-    # Map to existing DB column name 'created_by_id' to maintain backward compatibility
     creator_id = db.Column('created_by_id', db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
 
     created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
@@ -184,7 +179,7 @@ class ApiToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     name = db.Column(db.String(120))
-    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)  # sha256 hex
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
     created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
     last_used_at = db.Column(db.DateTime)
     revoked = db.Column(db.Boolean, default=False, nullable=False)

@@ -14,11 +14,10 @@ bp = Blueprint('tasks', __name__)
 @bp.get('/')
 @login_required
 def list_tasks():
-    # Only tasks from user's projects + filters
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     pids = [m.project_id for m in memberships]
     q = Task.query.filter(Task.project_id.in_(pids)) if pids else Task.query.filter(False)
-    # Filters
+    
     text = (request.args.get('q') or '').strip()
     status = request.args.get('status')
     priority = request.args.get('priority')
@@ -33,7 +32,7 @@ def list_tasks():
     if project_id and project_id in pids:
         q = q.filter(Task.project_id == project_id)
     tasks = q.order_by(Task.created_at.desc()).limit(300).all()
-    # Provide project list for filter select
+    
     projects = Project.query.filter(Project.id.in_(pids)).order_by(Project.name.asc()).all() if pids else []
     return render_template('tasks/list.html', tasks=tasks, projects=projects, selected_project=project_id)
 
@@ -42,12 +41,10 @@ def list_tasks():
 @login_required
 def create_task():
     form = TaskForm()
-    # Build project choices from memberships
     memberships = Membership.query.filter_by(user_id=current_user.id).all()
     user_projects = Project.query.filter(Project.id.in_([m.project_id for m in memberships])).all() if memberships else []
     form.project_id.choices = [(p.id, f"{p.key} — {p.name}") for p in user_projects]
 
-    # Determine selected project: query param has priority, else form field
     preselected_pid = request.args.get('project', type=int)
     if preselected_pid and not any(p.id == preselected_pid for p in user_projects):
         flash('Nie masz dostępu do wybranego projektu', 'danger')
@@ -59,7 +56,6 @@ def create_task():
         if not project:
             flash('Wybierz projekt', 'danger')
             return redirect(url_for('tasks.create_task'))
-        # Require membership for the target project
         require_project_membership(project.id)
         desc = clean(form.description.data or '', tags=['b','i','em','strong','code'], strip=True)
         t = Task(project=project,
@@ -81,7 +77,6 @@ def create_task():
 def task_detail(task_id: int):
     t = db.get_or_404(Task, task_id)
     require_project_membership(t.project_id)
-    # Build assignee choices (members of project)
     memberships = Membership.query.filter_by(project_id=t.project_id).all()
     member_users = User.query.filter(User.id.in_([m.user_id for m in memberships])).all() if memberships else []
     assignee_choices = [(u.id, u.name) for u in member_users]
